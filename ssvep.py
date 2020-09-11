@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from psychopy import visual, core
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
+import matplotlib.pyplot as plt
+from scipy import signal
 
 
 def ssvep_experiment(window, yes: bool=True, text_time: int=5, ssvep_time: int=5, ssvep_frequencies: list=[10, 20]):
@@ -77,7 +79,7 @@ def ssvep_experiment(window, yes: bool=True, text_time: int=5, ssvep_time: int=5
 
 
 params = BrainFlowInputParams()
-wifi = True
+wifi = False
 # cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
 # bluetooth is 2
 if wifi:
@@ -85,7 +87,7 @@ if wifi:
     params.ip_port = 6227
     board = BoardShim(6, params)
 else:  # bluetooth
-    params.serial_port = '/dev/ttyUSB0'
+    params.serial_port = 'COM4'#'/dev/ttyUSB0'
     board = BoardShim(2, params)
 
 
@@ -129,6 +131,23 @@ for (start, end), yn in zip(times, yes_nos):
     #     df.loc[(df[30] > start) & (df[30] < end), 'frequency'] = frequencies[1]
     # else:
     #     df.loc[(df[30] > start) & (df[30] < end), 'frequency'] = frequencies[0]
+
+
+
+
+
+###########################################
+
+
+f, t, Sxx = signal.spectrogram(x=df["7"], fs=250)
+plt.pcolormesh(t, f, Sxx, shading='gouraud')
+plt.ylabel('Frequency [Hz]')
+plt.xlabel('Time [sec]')
+plt.show()
+
+
+
+
 
 
 yeses = df[df['frequency'] == 20]
