@@ -13,9 +13,10 @@ sample_rate = 250  # Hz
 # looks like the first 2 seconds are bad in channels 7/8, first 16 seconds in channel 1
 df_clean = df_clean.iloc[500:]
 
+# df_clean.iloc[:, 1:17] = mne.filter.filter_data(df_clean.iloc[:, 1:17], 250, 5, 50)
+
 for channel in range(1, 17):
-    bandpass_ch = mne.filter.filter_data(df_clean['8'], 250, 5, 50)
-    df_clean[str(channel)] = pd.Series(bandpass_ch)
+    df_clean[str(channel)] = mne.filter.filter_data(df_clean[str(channel)], 250, 5, 50)
 
 
 f, t, Sxx = spectrogram(df_clean['8'], fs=250)
