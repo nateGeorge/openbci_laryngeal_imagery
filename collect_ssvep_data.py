@@ -1,9 +1,10 @@
 import sys
 import time
+import pickle
 
 import numpy as np
 import pandas as pd
-from psychopy import visual, core
+from psychopy import visual, core, sound
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import matplotlib.pyplot as plt
 from scipy import signal
@@ -48,7 +49,7 @@ def ssvep_experiment(window, yes: bool=True, text_time: int=5, ssvep_time: int=5
     # autodraw means it shows up
     square1 = visual.Rect(win=window, size=(0.5, 0.5), pos=(-0.6, 0), fillColor='white', opacity=0, autoDraw=True)
     square2 = visual.Rect(win=window, size=(0.5, 0.5), pos=(0.6, 0), fillColor='white', opacity=0, autoDraw=True)
-    yesno = 'YES' if yes else 'NO'
+    yesno = 'Look right' if yes else 'Look left'
     text = visual.TextStim(win=window, text=yesno)
     # draw() makes it show up with update() or .flip()
     text.draw()
@@ -119,7 +120,7 @@ def start_data_collection(wifi=False):
     return board
 
 
-def stop_stream_save_data(board, times, yes_nos, frequencies, filename):
+def stop_stream_save_data(board, alpha_times, times, yes_nos, frequencies, filename):
     time.sleep(3)  # add a few seconds before stopping for the bandpass filter
     data = board.get_board_data() # get all data and remove it from internal buffer
     board.stop_stream()
@@ -132,20 +133,63 @@ def stop_stream_save_data(board, times, yes_nos, frequencies, filename):
     df.drop([0] + list(range(20, 30)), inplace=True, axis=1)
     df['frequency'] = 0
 
+    for start, end in alpha_times:
+        df.loc[(df[30] > start) & (df[30] < end), 'frequency'] = 'alpha'
+        df.loc[(df[30] > end) & (df[30] < times[0][0]), 'frequency'] = 'beta'
+
     for (start, end), yn in zip(times, yes_nos):
         df.loc[(df[30] > start) & (df[30] < end), 'frequency'] = frequencies[1] if yn else frequencies[0]
 
     df.to_csv(filename + '_data.csv', index=False)
+    with open(filename + '_alpha_times.pk', 'wb') as f:
+        pickle.dump(alpha_times, f, -1)
     with open(filename + '_times.pk', 'wb') as f:
         pickle.dump(times, f, -1)
     with open(filename + '_yes_nos.pk', 'wb') as f:
         pickle.dump(yes_nos, f, -1)
 
 
+def eyes_closed():
+    g = sound.Sound('G', 1)
+    g.play()
+    start = time.time()
+    time.sleep(5)
+    g = sound.Sound('G', 1)
+    end = time.time()
+    g.play()
+    return start, end
+
+
 def run_experiment(filename, wifi=False, num_yes_nos=30):
     board = start_data_collection(wifi=wifi)
 
     window = visual.Window()
+
+
+    # alpha wave check
+    alpha_times = []
+    instructions = """Close your eyes when you hear the first sound,
+    and open them when you hear the second sound.
+    """
+    text = visual.TextStim(window, text=instructions)
+    text.draw()
+    window.flip()
+    time.sleep(3)
+    window.flip()
+
+    start, end = eyes_closed()
+    alpha_times.append((start, end))
+
+
+    for trial in range(5):
+        text = visual.TextStim(window, text='again')
+        text.draw()
+        window.flip()
+        time.sleep(5)
+        window.flip()
+        start, end = eyes_closed()
+        alpha_times.append((start, end))
+
 
     frequencies = [10, 20]
     yes_nos = [True] * (num_yes_nos // 2) + [False] * (num_yes_nos // 2)
@@ -155,11 +199,11 @@ def run_experiment(filename, wifi=False, num_yes_nos=30):
         start, end = ssvep_experiment(window, yes=yn, ssvep_frequencies=frequencies)
         times.append([start, end])
 
-    stop_stream_save_data(board, times, yes_nos, frequencies, filename)
+    stop_stream_save_data(board, alpha_times, times, yes_nos, frequencies, filename)
 
 
 if __name__ == "__main__":
-    run_experiment(filename='exp_1', num_yes_nos=4)
+    run_experiment(filename='exp_1_1020hz', num_yes_nos=20)
 
 
 # how to get the first yes section
