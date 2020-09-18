@@ -100,14 +100,14 @@ def start_data_collection(wifi=False):
     # bluetooth is 2
     if wifi:
         # default IP when connecting to board directly; may need to change
-        params.ip_address = '10.0.0.220'
+        params.ip_address = '192.168.4.1'
         params.ip_port = 6227
         board = BoardShim(6, params)
     else:  # bluetooth
         if sys.platform == 'linux':
             port = '/dev/ttyUSB0'
-        elif sys.platform == 'windows':
-            port = 'COM4'
+        elif 'win' in sys.platform:
+            port = 'COM3'
         params.serial_port = port
         board = BoardShim(2, params)
 
@@ -148,6 +148,8 @@ def stop_stream_save_data(board, alpha_times, times, yes_nos, frequencies, filen
     with open(filename + '_yes_nos.pk', 'wb') as f:
         pickle.dump(yes_nos, f, -1)
 
+    print('saved data')
+
 
 def eyes_closed():
     g = sound.Sound('G', 1)
@@ -160,7 +162,7 @@ def eyes_closed():
     return start, end
 
 
-def run_experiment(filename, wifi=False, num_yes_nos=30):
+def run_experiment(filename, wifi=False, num_yes_nos=30, frequencies=[10, 20]):
     board = start_data_collection(wifi=wifi)
 
     window = visual.Window()
@@ -191,7 +193,6 @@ def run_experiment(filename, wifi=False, num_yes_nos=30):
         alpha_times.append((start, end))
 
 
-    frequencies = [10, 20]
     yes_nos = [True] * (num_yes_nos // 2) + [False] * (num_yes_nos // 2)
     np.random.shuffle(yes_nos)
     times = []
@@ -203,7 +204,7 @@ def run_experiment(filename, wifi=False, num_yes_nos=30):
 
 
 if __name__ == "__main__":
-    run_experiment(filename='exp_1_1020hz', num_yes_nos=20)
+    run_experiment(filename='exp_1_12_20hz', num_yes_nos=20, frequencies=[12, 18], wifi=True)
 
 
 # how to get the first yes section
