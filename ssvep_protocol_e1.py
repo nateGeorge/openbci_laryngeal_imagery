@@ -42,12 +42,15 @@ def ssvep_experiment(window, yes: bool=True, text_time: int=5, ssvep_time: int=5
     #This is where I am replacing yesno with the elephant in the box stimuli
 
     if yes:
-        elephantStim = visual.ImageStim(win=window, image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask")
+        elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask")
+        boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
     else:
-        elephantStim = visual.ImageStim(win=window, image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask")
+        elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask")
+        boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
 
-
+    elephantStim.size = .4
     elephantStim.draw()
+    boxStim.draw()
     window.flip()
     time.sleep(2)
 
@@ -134,7 +137,7 @@ instrcts = "please follow the directions"
 instrct_stim = visual.TextStim(win=window, text=instrcts)
 instrct_stim.draw()
 window.flip()
-time.sleep(4)
+time.sleep(2)
 
 #show an example
 

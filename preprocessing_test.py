@@ -9,13 +9,12 @@ df = pd.read_csv('data_1.csv')
 
 # clean first few seconds
 df_clean = df.copy()
-sample_rate = 250  # Hz
+sample_rate = 250  # Hz; it's 1000 for the bluetooth
 # looks like the first 2 seconds are bad in channels 7/8, first 16 seconds in channel 1
 df_clean = df_clean.iloc[500:]
 
 for channel in range(1, 17):
-    bandpass_ch = mne.filter.filter_data(df_clean['8'], 250, 5, 50)
-    df_clean[str(channel)] = pd.Series(bandpass_ch)
+    df_clean[str(channel)] = mne.filter.filter_data(df_clean[str(channel)], 250, 5, 50)
 
 
 f, t, Sxx = spectrogram(df_clean['8'], fs=250)
