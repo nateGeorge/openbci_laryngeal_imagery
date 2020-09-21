@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from psychopy import visual, core
+from psychopy import visual, core, event
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import matplotlib.pyplot as plt
 from scipy import signal
@@ -33,6 +33,7 @@ def ssvep_experiment(window, yes: bool=True, text_time: int=5, ssvep_time: int=5
     list of floats
         the times the ssvep stimulus started and time it ended
     """
+
     # autodraw means it shows up
     square1 = visual.Rect(win=window, size=(0.5, 0.5), pos=(-0.6, 0), fillColor='white', opacity=0, autoDraw=True)
     square2 = visual.Rect(win=window, size=(0.5, 0.5), pos=(0.6, 0), fillColor='white', opacity=0, autoDraw=True)
@@ -54,13 +55,19 @@ def ssvep_experiment(window, yes: bool=True, text_time: int=5, ssvep_time: int=5
     window.flip()
     time.sleep(2)
 
+    mouse = event.Mouse(win=window)
+    buttons = mouse.getPressed()
+    buttons, times = mouse.getPressed(getTime=True)
+    print(list(times))
+    window.flip()
+
 
     #
 
 
-    text = visual.TextStim(win=window, text=yesno)
+    #text = visual.TextStim(win=window, text=yesno)
     # draw() makes it show up with update() or .flip()
-    text.draw()
+    #text.draw()
     window.flip()
     time.sleep(text_time)
     window.flip()
