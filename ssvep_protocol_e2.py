@@ -34,20 +34,20 @@ def instructions(window):
 
     instrct_stim.draw()
     window.flip()
-    time.sleep(2)
+    time.sleep(8)
 
     instrct_stim.text = instrctsTxt_2
 
     instrct_stim.draw()
     window.flip()
-    while event.Mouse.getPressed()[0] != 1
-        sleep(1)
+    #while event.Mouse.getPressed()[0] != 1
+    time.sleep(8)
 
     instrct_stim.text = instrctsTxt_3
 
     instrct_stim.draw()
     window.flip()
-    time.sleep(2)
+    time.sleep(8)
 
 
     return 1
@@ -72,7 +72,6 @@ def main():
     window.close()
 
     protocol()
-
     return 1
 
 
