@@ -74,6 +74,9 @@ plt.show()
 # create features and targets
 # shape is (frequencies, samples), but needs to be (samples, features) for sklearn
 train_features = np.concatenate((Sxx10s[0], Sxx20s[0]), axis=1).T
+train_targets = np.array([10] * Sxx10s[0].shape[1] + [20] * Sxx20s[0].shape[1])
+
+
 half_feature_shape = train_features.shape[0] // 2
 train_targets = np.array([10] * half_feature_shape + [20] * half_feature_shape)
 
