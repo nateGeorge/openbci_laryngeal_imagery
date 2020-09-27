@@ -4,10 +4,24 @@ import numpy as np
 from scipy.signal import spectrogram
 from sklearn.svm import LinearSVC, SVC
 import matplotlib.pyplot as plt
+import matplotlib
 
 class ssvep:
-    def __init__(self):
-        pass
+    def __init__(self, set_fontsize=True, fontsize=22):
+        """
+        Parameters
+        ----------
+        set_fontsize : boolean
+            Whether or not to set matplotlib font size for plots.
+        fontsize : int
+            Font size for matplotlib plots.
+        """
+        if set_fontsize:
+            font = {'family' : 'normal',
+                    'size'   : fontsize}
+
+            matplotlib.rc('font', **font)
+
 
     def load_data(self,
                     datapath='/home/nate/github/ssvep_test/win_exp1_ssvep/bluetooth/10_20/',
@@ -125,9 +139,9 @@ class ssvep:
 
 
     def engineer_features(self,
-                        nperseg=None,
-                        noverlap=None,
-                        channels=[7, 8, 15, 16]):
+                            nperseg=None,
+                            noverlap=None,
+                            channels=[7, 8, 15, 16]):
         """Creates spectrogram features from cleaned data.
 
         Notes
@@ -210,18 +224,36 @@ class ssvep:
         self.f2_specs = f2_specs
 
 
-    def create_train_test(self, train_fraction=0.8):
+    def create_train_test_frequencies(self,
+                                    train_fraction=0.8,
+                                    alpha_waves=False):
         """Creates train and test features from spectrogram features.
+
+        Parameters
+        ----------
+        train_fraction : float
+            Percent (0-1) of data to use as training set.
+        alpha_waves : boolean
+            Whether or not to use alpha waves or frequencies.
         """
+        if alpha_waves:
+            specs1 = self.alpha_specs
+            specs2 = self.beta_specs
+            f1, f2 = 10, 20
+        else:
+            specs1 = self.f1_specs
+            specs2 = self.f2_specs
+            f1, f2 = frequencies
+
         np.random.seed(42)
-        num_train_samples = int(train_fraction * len(self.f1_specs))
-        idxs = list(range(len(self.f1_specs)))
+        num_train_samples = int(train_fraction * len(specs1))
+        idxs = list(range(len(specs1)))
         train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
         test_idxs = list(set(idxs).difference(set(train_idxs)))
-        train_f1s = np.concatenate([self.f1_specs[i] for i in train_idxs], axis=1)
-        train_f2s = np.concatenate([self.f2_specs[i] for i in train_idxs], axis=1)
-        test_f1s = np.concatenate([self.f1_specs[i] for i in test_idxs], axis=1)
-        test_f2s = np.concatenate([self.f2_specs[i] for i in test_idxs], axis=1)
+        train_f1s = np.concatenate([specs1[i] for i in train_idxs], axis=1)
+        train_f2s = np.concatenate([specs2[i] for i in train_idxs], axis=1)
+        test_f1s = np.concatenate([specs1[i] for i in test_idxs], axis=1)
+        test_f2s = np.concatenate([specs2[i] for i in test_idxs], axis=1)
 
         train_features = np.concatenate((train_f1s, train_f2s), axis=-1)
         train_targets = np.array([self.frequencies[0]] * train_f1s.shape[1] + \
@@ -238,15 +270,45 @@ class ssvep:
         self.train_targets = train_targets
 
         test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
-        test_targets = np.array([self.frequencies[0]] * test_f1s.shape[1] + \
-                        [self.frequencies[1]] * test_f2s.shape[1])
+        test_targets = np.array([f1] * test_f1s.shape[1] + \
+                                [f2] * test_f2s.shape[1])
 
         self.test_features = test_features.T
         self.test_targets = test_targets
 
 
-    def fit_svm(self):
-        svc = SVC(C=0.01)
+    def fit_svm(self, C=0.01):
+        svc = SVC(C=C)
         svc.fit(self.train_features, self.train_targets)
         print('training accuracy:', svc.score(self.train_features, self.train_targets))
         print('testing accuracy:', svc.score(self.test_features, self.test_targets))
+
+
+    def plot_spectrogram(self, ts, fs, spec, savefig=False, filename=None):
+        """Plots a spectrogram of FFT.
+
+        Parameters
+        ----------
+        ts : np.array
+            timestamps in seconds
+        fs : np.array
+            frequencies in Hz
+        spec : np.array
+            spectrogram (FFT magnitudes)
+        savefig : boolean
+            Whether to save the figure to disk.
+        filename : str
+            File name of the saved image.
+        """
+        f = plt.figure()
+        plt.pcolormesh(ts, fs, spec, shading='gouraud')
+        plt.ylabel('Frequency [Hz]')
+        plt.xlabel('Time [sec]')
+        plt.ylim([5, 50])
+        plt.colorbar()
+        plt.show()
+        if savefig:
+            if filename is None:
+                filename = 'saved_plot.png'
+
+            plt.savefig(filename)
