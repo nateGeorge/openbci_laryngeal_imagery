@@ -50,8 +50,78 @@ class ssvep:
 
         # store copies of data for any analysis
         df_clean.dropna(inplace=True)
+        # for some reason the last second of bandpassed wifi data has issues
+        if sample_rate == 1000:
+            df_clean = df_clean.iloc[:-1000]
         self.df_clean = df_clean
         self.df = df
+
+
+    def get_alpha_beta(self,
+                        nperseg=None,
+                        noverlap=None,
+                        channels=[7, 8, 15, 16]):
+        """Gets alpha and beta sections from data and extracts FFT features.
+        """
+        if nperseg is None:
+            nperseg = self.sample_rate
+        if noverlap is None:
+            noverlap = nperseg - 10
+
+        df_clean = self.df_clean
+        # breaks up contiguous chunks of ssvep sections into groups and lists
+        groups = list(df_clean.groupby((df_clean['frequency'] != df_clean['frequency'].shift()).cumsum()))
+
+        alpha_dfs = [d[1] for d in groups if d[1]['frequency'].unique()[0] == 'alpha']
+        beta_dfs = [d[1] for d in groups if d[1]['frequency'].unique()[0] == 'beta']
+
+        alpha_specs = []
+        alpha_fs = []
+        alpha_ts = []
+        for d in alpha_dfs:
+            specs = []
+            for c in channels:
+                # frequency, time, intensity (shape fxt)
+                alpha_f, alpha_t, c_spec = spectrogram(d[str(c)],
+                                                    fs=self.sample_rate,
+                                                    nperseg=nperseg,
+                                                    noverlap=noverlap)
+                specs.append(c_spec)
+
+            alpha_spec = np.mean(np.array(specs), axis=0)
+            alpha_specs.append(alpha_spec)
+            alpha_fs.append(alpha_f)
+            alpha_ts.append(alpha_t)
+
+
+        beta_specs = []
+        beta_fs = []
+        beta_ts = []
+        for d in beta_dfs:
+            specs = []
+            for c in channels:
+                # frequency, time, intensity (shape fxt)
+                beta_f, beta_t, c_spec = spectrogram(d[str(c)],
+                                                fs=self.sample_rate,
+                                                nperseg=nperseg,
+                                                noverlap=noverlap)
+                specs.append(c_spec)
+
+            beta_spec = np.mean(np.array(specs), axis=0)
+
+            beta_specs.append(beta_spec)
+            beta_fs.append(beta_f)
+            beta_ts.append(beta_t)
+
+        # for plotting
+        self.alpha_fs = alpha_fs
+        self.alpha_ts = alpha_ts
+
+        self.beta_fs = beta_fs
+        self.beta_ts = beta_ts
+
+        self.alpha_specs = alpha_specs
+        self.beta_specs = beta_specs
 
 
     def engineer_features(self,
