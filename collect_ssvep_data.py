@@ -114,7 +114,7 @@ def start_data_collection(wifi=False):
     board.prepare_session()
     # by default stores 7.5 minutes of data; change num_samples higher for more
     # sampling rate of 1k/s, so 450k samples in buffer
-    board.start_stream()
+    board.start_stream(num_samples=900000)  # 15 minutes wifi data; 60 minutes BT
     print('streaming data')
 
     return board
@@ -126,10 +126,11 @@ def stop_stream_save_data(board, alpha_times, times, yes_nos, frequencies, filen
     board.stop_stream()
     board.release_session()
 
-    # rows: 0 - no idea (repeating 0.0 to 255.0),
+    # rows: 0 - idx for checking for missing data (repeating 0.0 to 255.0),
     # 1-16 - channel data, 17-19 - accel data, 30 - timestamp data
     # channel data in uV, time in uS since epoch
     df = pd.DataFrame(data.T)
+    df.to_csv(filename + '_raw_data.csv', index=False)
     df.drop([0] + list(range(20, 30)), inplace=True, axis=1)
     df['frequency'] = 0
 

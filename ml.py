@@ -26,9 +26,21 @@ class ssvep:
     def load_data(self,
                     datapath='/home/nate/github/ssvep_test/win_exp1_ssvep/bluetooth/10_20/',
                     filename='exp_1_1020hz_data.csv',
-                    sample_rate=250,
+                    sample_rate=125,
                     frequencies=[10, 20]):
         """Loads EEG ssvep data.
+
+        Notes
+        -----
+        16-channel Cyton+Daisy over bluetooth is 125Hz sampling rate.
+
+        16-channel Cyton+Daisy over WiFi is 1000Hz sampling rate.
+
+        The timestamp is not exact -- it can be delayed by system issues
+        (e.g. loading into memory on the computer, etc).
+        Apparantly the frequency sampling on the board is pretty accurate, so
+        other than the large gaps in the data, one can assume the sampling rate
+        is 125, 250, or 1000 Hz.
 
         Paramaters
         ----------
@@ -170,8 +182,8 @@ class ssvep:
         # breaks up contiguous chunks of ssvep sections into groups and lists
         groups = list(df_clean.groupby((df_clean['frequency'] != df_clean['frequency'].shift()).cumsum()))
 
-        f1_dfs = [d[1] for d in groups if d[1]['frequency'].unique()[0] == f1]
-        f2_dfs = [d[1] for d in groups if d[1]['frequency'].unique()[0] == f2]
+        f1_dfs = [d[1] for d in groups if d[1]['frequency'].unique()[0] == str(f1)]
+        f2_dfs = [d[1] for d in groups if d[1]['frequency'].unique()[0] == str(f2)]
         # higher n per segment gets higher frequency resolution
         # n per segment at the sampling frequency gets a resolution of 1Hz
         # higher n overlap means higher time resolution
@@ -243,7 +255,7 @@ class ssvep:
         else:
             specs1 = self.f1_specs
             specs2 = self.f2_specs
-            f1, f2 = frequencies
+            f1, f2 = self.frequencies
 
         np.random.seed(42)
         num_train_samples = int(train_fraction * len(specs1))
@@ -300,12 +312,13 @@ class ssvep:
         filename : str
             File name of the saved image.
         """
-        f = plt.figure()
+        f = plt.figure(figsize=(12, 12))
         plt.pcolormesh(ts, fs, spec, shading='gouraud')
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')
         plt.ylim([5, 50])
         plt.colorbar()
+        plt.tight_layout()
         plt.show()
         if savefig:
             if filename is None:
