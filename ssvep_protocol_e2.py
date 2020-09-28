@@ -6,6 +6,23 @@ from psychopy import visual, core, event
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import matplotlib.pyplot as plt
 from scipy import signal
+from psychopy.event import Mouse, getKeys
+from psychopy.visual import Window
+
+def waitForArrow(window, maxFlips):
+    while maxFlips < numFlips:
+        keys = getKeys()
+        #if len(keys) > 0:
+        #     print(keys)
+        #     break
+        if 'right' in keys:
+            window.flip()
+            if numFlips is None:
+                numFlips = 1
+            else:
+                numFlips = numFlips + 1
+            break
+
 
 def get_keypress(window):
     keys = event.getKeys()
@@ -80,7 +97,8 @@ def example(window):
 
     exText1_Stim = visual.TextStim(win=window, text=exText1)
     exText1_Stim.draw()
-    window.flip()
+    waitForArrow(window)
+    #window.flip()
     time.sleep(2)
 
     exText2 = "At the beginning of each trial you will be shown a stimulus like..."
@@ -88,8 +106,8 @@ def example(window):
     exText2_Stim = visual.TextStim(win=window, text=exText2)
     exText2_Stim.draw()
 
-
-    window.flip()
+    waitForArrow(window)
+    #window.flip()
     time.sleep(2)
 
     exText3 = "this"
@@ -104,7 +122,8 @@ def example(window):
     elephantStim.draw()
     boxStim.draw()
 
-    window.flip()
+    waitForArrow(window)
+    #window.flip()
     time.sleep(2)
 
 
@@ -120,7 +139,8 @@ def example(window):
     elephantStim.draw()
     boxStim.draw()
 
-    window.flip()
+    waitForArrow(window)
+    #window.flip()
     time.sleep(2)
 
     return 1
@@ -139,20 +159,27 @@ def instructions(window):
     instrct_stim = visual.TextStim(window, text=instrctsTxt_1)
 
     instrct_stim.draw()
-    window.flip()
+
+
+
+    waitForArrow(window)
     time.sleep(5)
 
     instrct_stim.text = instrctsTxt_2
 
     instrct_stim.draw()
-    window.flip()
+
+    waitForArrow(window)
+    #window.flip()
     #while event.Mouse.getPressed()[0] != 1
     time.sleep(5)
 
     instrct_stim.text = instrctsTxt_3
 
     instrct_stim.draw()
-    window.flip()
+
+    waitForArrow(window)
+    #window.flip()
     time.sleep(5)
 
 
@@ -164,7 +191,9 @@ def protocol(window):
         instructions(window)
         example(window)
         trial(window)
-        window.flip()
+
+        waitForArrow(window)
+        #window.flip()
         window.close()
 
 def main():
@@ -172,7 +201,9 @@ def main():
     window = visual.Window()
     protocol(window)
     time.sleep(1)
-    window.flip()
+
+    waitForArrow(window)
+    #window.flip()
     window.close()
 
     protocol(window)
