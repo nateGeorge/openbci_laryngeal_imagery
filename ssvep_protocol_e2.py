@@ -9,26 +9,88 @@ from scipy import signal
 from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
 
-def checkAns():
+def ssvepStim(window):
+    """Presents the SSVEP flashing stimuli.
+
+    Parameters
+    ----------
+    window : obj
+        Visual window object.
+    """
+    print("yo")
+    ssvep_frequencies: list=[7.5, 15]
+    ssvep_time: int=5
+    square1 = visual.Rect(win=window, size=(0.5, 0.5), pos=(-0.6, 0), fillColor='white', opacity=0, autoDraw=True)
+    square2 = visual.Rect(win=window, size=(0.5, 0.5), pos=(0.6, 0), fillColor='white', opacity=0, autoDraw=True)
+
+    clock = core.Clock()
+    frequency1, frequency2 = ssvep_frequencies  # in Hz
+    time_on1 = 1 / (frequency1 * 2)  # should be on for have a cycle, off for half a cycle
+    time_on2 = 1 / (frequency2 * 2)
+
+    start = clock.getTime()
+    start1 = start
+    start2 = start1  # copies it; changing start1 does not change start2
+    epoch_start = time.time()
+    while True:
+        timenow = clock.getTime()
+        if timenow - start1 >= time_on1:
+            square1.opacity = not square1.opacity
+            start1 = timenow
+            window.update()
+
+        if timenow - start2 >= time_on2:
+            square2.opacity = not square2.opacity
+            start2 = timenow
+            window.update()
+
+        if timenow - start > ssvep_time:
+            break
+
+    epoch_end = time.time()
+    square1.autoDraw = False
+    square2.autoDraw = False
+    window.flip()
+
+def checkAns(yes_nos, iTrials):
     """Checks to see if the correct answer was given to the primary stage of the experimental trial.
 
+    Parameters
+    ----------
+    yes_nos : array
+        Array of true's and false's corresponding to the correct answers to each trial; zero-indexed.
+    iTrials : int
+        Number corresponding to the current trial which needs to be checked.
     Returns
     -------
     bool
-        Returns true if the answer was correct and false if the answer was incorrect
+        Returns True if the answer was correct and False if the answer was incorrect
     """
+    #set the correct answer to a variable called corAns
+    corAns = yes_nos[iTrials - 1]
+    thrAns = None
+    print("in checkAns")
 
     #present instructions for keypress responses: -> for yes and <- for no
+
     #while loop for getting keys
         #
     while True:
         keys = getKeys()
 
         if 'right' in keys:
-            return True
+            thrAns = True
         if 'left' in keys:
-            return False
+            thrAns = False
+        #print("...still going...")
 
+        if thrAns != None:
+            if thrAns == corAns:
+                event.clearEvents()
+                return True
+            if thrAns != corAns:
+                event.clearEvents()
+                return False
 
 def makeYesnos(nYes=10, nNos=10):
     """Creates a randomly shuffled array of True and False values.
@@ -43,12 +105,10 @@ def makeYesnos(nYes=10, nNos=10):
 
     yes_nos = [True] * nYes + [False] * nNos
     np.random.shuffle(yes_nos)
-    print(yes_nos)
 
     return yes_nos
 
-
-def trialByType(window, type):
+def trialByType(window, type, iTrials):
     """Depending on the type argument given, runs the correct type of experimental trial.
 
     Parameters
@@ -61,41 +121,119 @@ def trialByType(window, type):
             "LMI" - for laryngeal motor imagery
     window : obj
         Visual window object.
+    iTrials : int
+        Current trial number.
     """
+    global yes_nos
+
+    #show trial number
+    if type == "S":
+        fulType = "SSVEP"
+    if type == "TMI":
+        fulType = "Traditional Motor Imagery"
+    if type == "LMI":
+        fulType = "Laryngeal Motor Imagery"
+    trialNumStim = visual.TextStim(win=window, text=fulType + " Trial #" + str(iTrials), pos=(-.3, .8))
+    trialNumStim.draw()
 
     if type == "S":
         #present the stimulus
-        elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
-        boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+        if yes_nos[iTrials-1] == True:
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+        if yes_nos[iTrials-1] == False:
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
 
         elephantStim.draw()
         boxStim.draw()
+
         window.flip()
 
-        #ask/wait for the correct answer via the keyboard arrows
-            #if the incorrect answer is given, represent the stimulus and ask for the correct answer via the keyboard again
-            #if the correct answer is given, go on
+        check = checkAns(yes_nos, iTrials)
 
-        waitForArrow(window)
+        if check == True:
+            window.flip()
+
+        if check == False:
+            retryText = "Please enter the correct answer before continuing"
+            retryStim = visual.TextStim(win=window, text=retryText, color="red")
+            retryStim.draw()
+            window.flip()
+            time.sleep(.5)
+            window.flip()
+            event.clearEvents()
+            trialByType(window, "S", iTrials)
+
 
         #ask for the correct answer via SSVEP response
+            #present the ssvep stimuli and record this time for annotations
+        ssvepStim(window)
+
 
     if type == "TMI":
         print("hello " + type)
         #present the stimulus
-        #ask for the correct answer via the keyboard arrows
-            #if the incorrect answer is given, represent the stimulus and ask for the correct answer via the keyboard again
-            #if the correct answer is given, go on
+        if yes_nos[iTrials-1] == True:
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+        if yes_nos[iTrials-1] == False:
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
+
+        elephantStim.draw()
+        boxStim.draw()
+
+        window.flip()
+
+        check = checkAns(yes_nos, iTrials)
+
+        if check == True:
+            window.flip()
+
+        if check == False:
+            retryText = "Please enter the correct answer before continuing"
+            retryStim = visual.TextStim(win=window, text=retryText, color="red")
+            retryStim.draw()
+            window.flip()
+            time.sleep(.5)
+            window.flip()
+            event.clearEvents()
+            trialByType(window, "TMI", iTrials)
+
         #ask for the correct answer via TMI response
 
     if type == "LMI":
         print("hello " + type)
         #present the stimulus
-        #ask for the correct answer via the keyboard arrows
-            #if the incorrect answer is given, represent the stimulus and ask for the correct answer via the keyboard again
-            #if the correct answer is given, go on
-        #ask for the correct answer via LMI response
+        if yes_nos[iTrials-1] == True:
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+        if yes_nos[iTrials-1] == False:
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
 
+        elephantStim.draw()
+        boxStim.draw()
+
+        window.flip()
+
+        check = checkAns(yes_nos, iTrials)
+
+        if check == True:
+            window.flip()
+
+        if check == False:
+            retryText = "Please enter the correct answer before continuing"
+            retryStim = visual.TextStim(win=window, text=retryText, color="red")
+            retryStim.draw()
+            window.flip()
+            time.sleep(.5)
+            window.flip()
+            event.clearEvents()
+            trialByType(window, "LMI", iTrials)
+
+        #ask for the correct answer via LMI response
 
 def waitForArrow(window):
     """Waits for input and flips the window when the arrow keys are pressed, or exits the program if X is pressed.
@@ -105,9 +243,9 @@ def waitForArrow(window):
     window : obj
         Visual window object.
     """
-
     #draw stimuli on the bottom of the page to prompt the participant to move forward
-    moveFrwdText = "To move on press the right arrow or X to Exit"
+
+    moveFrwdText = "To move on press the space bar or X to Exit"
     moveFrwdStim = visual.TextStim(win=window, text=moveFrwdText, pos=(0, -.9), color="black")
     moveFrwdStim.draw()
     window.flip(clearBuffer=False)
@@ -117,13 +255,12 @@ def waitForArrow(window):
         #if len(keys) > 0:
         #     print(keys)
         #     break
-        if 'right' in keys:
+        if 'space' in keys:
             window.flip()
             break
         if 'x' in keys:
             window.close()
             sys.exit(0)
-
 
 def getKeypress(window):
     """Gets keypresses from the keyboard.
@@ -141,8 +278,6 @@ def getKeypress(window):
     else:
         print("not what I wanted")
         return None
-
-
 
 def startBCI(serialPort='COM4', wifi=False):
     """Starts the connection/stream of the openBCI headset
@@ -179,7 +314,6 @@ def startBCI(serialPort='COM4', wifi=False):
 
     return board
 
-
 def stopBCI(board):
     """Stops the openBCI datastream and disconnects the headset
 
@@ -193,8 +327,6 @@ def stopBCI(board):
     data = board.get_board_data()
     board.stop_stream()
     #board.release_session() #this is for disconnecting the headset
-
-
 
 def trials(window, nSsvepTrials, nMiTrials, nLmiTrials):
     """Runs the experimental protocol for the trial section of the experiment.
@@ -210,27 +342,29 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials):
     nLmiTrials : int
         The number of laryngeal MI trials to repeat.
     """
+    global yes_nos
+    yes_nos =  makeYesnos(5, 5) + makeYesnos(5, 5) + makeYesnos(5, 5)
+    print(yes_nos)
     iTrials = 1 #the current trial number intialized to 1
 
     #repeat the number of ssvep trials
     while iTrials <= nSsvepTrials:
-        trialByType(window, "S")
+        trialByType(window, "S", iTrials)
         iTrials = iTrials + 1
 
     iTrials = 1
     #repeat the number of traditional MI trials
     while iTrials <= nMiTrials:
-        trialByType(window, "TMI")
+        trialByType(window, "TMI", iTrials)
         iTrials = iTrials + 1
 
     iTrials = 1
     #repeat the number of laryngeal MI trials
     while iTrials <= nLmiTrials:
-        trialByType(window, "LMI")
+        trialByType(window, "LMI", iTrials)
         iTrials = iTrials + 1
 
     return 1
-
 
 def example(window):
     """Runs the experimental protocol for the example stimuli section of the experiment.
@@ -285,7 +419,6 @@ def example(window):
 
     return 1
 
-
 def instructions(window):
     """Runs the experimental protocol for the instructions section of the experiment.
 
@@ -294,11 +427,11 @@ def instructions(window):
     window : obj
         Visual window object.
     """
-    instrctsTxt_1 = "As you go through this experiment you will answer yes or no to a simple question. You will see an elephant pop up on the screen. The elephant will either be inside of the box or not."
+    instrctsTxt_1 = "As you go through this experiment you will answer yes or no to a simple question. You will see an elephant pop up on the screen. The elephant will either be inside of a box or not."
 
     instrctsTxt_2 = "You will then be asked: 'Was the elephant in the box?' Please click the right arrow (->) to respond yes or  the left arrow (<-) to respond no."
 
-    instrctsTxt_3 = "After you have responded correctly you will respond again by looking at the flashing light on the right to respond yes, or the flashing light on the left to respond no."
+    instrctsTxt_3 = "Only after you have responded correctly will you respond again by looking at the flashing light on the right to respond yes, or the flashing light on the left to respond no."
 
     instrctsTxt = instrctsTxt_1 + instrctsTxt_2 + instrctsTxt_3
 
@@ -325,7 +458,6 @@ def instructions(window):
 
     return 1
 
-
 def protocol(window):
     """Runs the modules in the experimental protocol.
 
@@ -350,6 +482,8 @@ def main():
     protocol(window)
     return 1
 
-makeYesnos(3, 3)
+
+
+
 main()
 core.quit()
