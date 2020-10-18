@@ -74,7 +74,10 @@ class expData:
         self.dataTrials = []
 
     def addTrial(self, onset, duration, description, label):
-        self.dataTrials = trialData(onset, duration, description, label)
+        if hasattr("self", "dataTrials") != True:
+            self.dataTrials = trialData(onset, duration, description, label)
+        else:
+            self.dataTrials.append(trialData(onset, duration, description, label))
 
     def startBCI(self, serialPort='COM4', wifi=False):
         """Starts the connection/stream of the openBCI headset
@@ -380,14 +383,14 @@ def trialByType(window, type, iTrials, data):
     if type == "S":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             elephantStim.autoDraw = True
-            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
             boxStim.autoDraw = True
         if yes_nos[iTrials-1] == False:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             elephantStim.autoDraw = True
-            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
+            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
             boxStim.autoDraw = True
 
         elephantStim.draw()
@@ -401,6 +404,7 @@ def trialByType(window, type, iTrials, data):
             window.flip()
             ssvepStart, ssvepStop = ssvepStim(window)
 
+
             data.trials = trialData(ssvepStart, ssvepStop - ssvepStart, yes_nos[iTrials-1], "SSVEP")
 
             # data.onsets.append(start)
@@ -409,8 +413,8 @@ def trialByType(window, type, iTrials, data):
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             trialNumStim.autoDraw = False
-
             window.flip()
+
 
         if check == False:
             retryText = "Please enter the correct answer before continuing"
@@ -423,9 +427,16 @@ def trialByType(window, type, iTrials, data):
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             window.flip()
-            trialByType(window, "S", iTrials, data)
+            print("test 1")
+            ssvepStart, ssvepStop = trialByType(window, "S", iTrials, data)
+            elephantStim.autoDraw = False
+            boxStim.autoDraw = False
+            trialNumStim.autoDraw = False
+            window.flip()
+            print("test 2")
 
         return ssvepStart, ssvepStop
+
 
         #ask for the correct answer via SSVEP response
             #present the ssvep stimuli and record this time for annotations
@@ -434,11 +445,11 @@ def trialByType(window, type, iTrials, data):
     if type == "TMI":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
-            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
         if yes_nos[iTrials-1] == False:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
-            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
@@ -451,6 +462,11 @@ def trialByType(window, type, iTrials, data):
             window.flip()
             tmiStart, tmiStop = miPrompt(window, "t")
             trialNumStim.autoDraw = False
+            elephantStim.autoDraw = False
+            boxStim.autoDraw = False
+            trialNumStim.autoDraw = False
+            window.flip()
+            return tmiStart, tmiStop
 
         if check == False:
             retryText = "Please enter the correct answer before continuing"
@@ -461,19 +477,22 @@ def trialByType(window, type, iTrials, data):
             window.flip()
             event.clearEvents()
             trialByType(window, "TMI", iTrials, data)
+            elephantStim.autoDraw = False
+            boxStim.autoDraw = False
+            trialNumStim.autoDraw = False
+            window.flip()
 
-        return tmiStart, tmiStop
 
         #ask for the correct answer via TMI response
 
     if type == "LMI":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
-            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
         if yes_nos[iTrials-1] == False:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
-            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
@@ -486,16 +505,24 @@ def trialByType(window, type, iTrials, data):
             window.flip()
             lmiStart, lmiStop = miPrompt(window, "l")
             trialNumStim.autoDraw = False
+            elephantStim.autoDraw = False
+            boxStim.autoDraw = False
+            trialNumStim.autoDraw = False
+            window.flip()
 
         if check == False:
             retryText = "Please enter the correct answer before continuing"
             retryStim = visual.TextStim(win=window, text=retryText, color="red")
             retryStim.draw()
             window.flip()
-            time.sleep(.5)
+            time.sleep(1)
             window.flip()
             event.clearEvents()
-            trialByType(window, "LMI", iTrials)
+            lmiStart, lmiStop = trialByType(window, "LMI", iTrials, data)
+            elephantStim.autoDraw = False
+            boxStim.autoDraw = False
+            trialNumStim.autoDraw = False
+            window.flip()
 
         return lmiStart, lmiStop
 
@@ -619,8 +646,8 @@ def example(window):
 
     exText3 = "this"
     exText3_Stim = visual.TextStim(win=window, text=exText3, pos=(0, .7))
-    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
-    boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
+    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+    boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
     corAns = "Yes"
     corAns_Stim = visual.TextStim(win=window, text=corAns, pos=(0, -.5))
 
@@ -634,8 +661,8 @@ def example(window):
 
     exText4 = "or this"
     exText4_Stim = visual.TextStim(win=window, text=exText4, pos=(0, .7))
-    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
-    boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
+    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+    boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
     corAns = "NO"
     corAns_Stim = visual.TextStim(win=window, text=corAns, pos=(0, -.7))
 
@@ -700,7 +727,7 @@ def protocol(window):
 
     instructions(window)
     example(window)
-    trials(window, 2, 2, 2, data)
+    trials(window, 0, 0, 2, data)
 
     waitForArrow(window)
     window.close()
