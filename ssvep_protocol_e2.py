@@ -9,16 +9,19 @@ import matplotlib.pyplot as plt
 from scipy import signal
 from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
+import tkinter
+from tkinter import filedialog
+from tkinter.filedialog import asksaveasfile
 
-class timeData:
-    """ This is a class that stores start times, stop times, and labels for time data.
+class trialData:
+    """ This is a class that stores trial data.
 
     Attributes
     ----------
-    startTime : int
+    onset : int
         The time the labeled data started being recorded.
-    stopTime : int
-        The time the labeled data stopped being recorded.
+    duration : int
+        The duration of the trial data.
     Label : string
         A string corresponding to the type of data being recorded.
         Could be one of:
@@ -26,18 +29,24 @@ class timeData:
             T - traditional motor imagery
             L - laryngeal motor imagery
     """
-    def __init__(self, startTime, label, stopTime=None):
-        self.startTime = startTime
-        self.stopTime = stopTime if stopTime is not None else None
+    def __init__(self, onset, duration, description, label):
+        # self.startTime = startTime
+        # self.stopTime = stopTime if stopTime != 0 else None
+        # self.label = label
+        self.onset = onset
+        self.stopTime = 0
+        self.duration = duration
+        self.description = description
         self.label = label
+
+    def updateDur(self, stop):
+        self.duration = self.onset - stop
 
 class expData:
     """ This is a class to store the important information about the experiment for when the experiment is over.
 
     Attributes
     ----------
-    allTimeData : array
-        An array of timeData objects.
     rawEEG : obj
         An mne object that stores the raw EEG data.
     expDate : obj
@@ -46,19 +55,26 @@ class expData:
         An int containing the participant's.
     descriptions : bool
         A boolean to represent yes or no; True equals yes.
+    label : str
+        A string describing the type of trial.
+        Could be one of:
+            SSVEP - steady-state visually evoked potentials
+            TMI - tradition motor imagery
+            LMI - laryngeal motor imagery
     """
     #add a method to create an mne.annotations object
     #raw = mne.io.RawArray(data[:16, :])
 
 
-    def __init__(self, allTimeData):
+    def __init__(self):
         #create parameters required in the init function which record the following
         #important times
         #the eeg data
         #the date and time
-        self.onsets = []
-        self.durations = []
-        self.descriptions = []
+        self.dataTrials = []
+
+    def addTrial(self, onset, duration, description, label):
+        self.dataTrials = trialData(onset, duration, description, label)
 
     def startBCI(self, serialPort='COM4', wifi=False):
         """Starts the connection/stream of the openBCI headset
@@ -142,7 +158,31 @@ class expData:
         montage = make_standard_montage('standard_1020')
         raw.set_montage(montage)
 
+
+
+        files = [('All Files', '*.*'),
+         ('Python Files', '*.py'),
+         ('Text Document', '*.txt')]
+        file = asksaveasfile(filetypes = files, defaultextension = files)
+
         raw.save()
+
+def ssvepVideo(window, frequency_1, frequency_2):
+
+    Hz_7 = visual.MovieStim3(window, 'f'+ str(frequency_1) +'Hz.avi', size=(200, 200), pos=[250, 0]) #7 Hz is on the right so it represents yes
+    Hz_12 = visual.MovieStim3(window, 'f'+ str(frequency_2) +'Hz.avi', size=(200, 200), pos=[-250, 0])
+
+    clock = core.Clock()
+
+    while Hz_7.status != -1:
+        if "start" not in locals(): start = clock.getTime()
+        Hz_7.draw()
+        Hz_12.draw()
+        window.flip()
+
+    end = clock.getTime()
+
+    return start, end
 
 def miPrompt(window, miType):
     """Presents the prompt for the traditional motor imagery (TMI) response.
@@ -218,20 +258,22 @@ def ssvepStim(window):
     start1 = start
     start2 = start1  # copies it; changing start1 does not change start2
     epoch_start = time.time()
-    while True:
-        timenow = clock.getTime()
-        if timenow - start1 >= time_on1:
-            square1.opacity = not square1.opacity
-            start1 = timenow
-            window.update()
+    # while True:
+    #     timenow = clock.getTime()
+    #     if timenow - start1 >= time_on1:
+    #         square1.opacity = not square1.opacity
+    #         start1 = timenow
+    #         window.update()
+    #
+    #     if timenow - start2 >= time_on2:
+    #         square2.opacity = not square2.opacity
+    #         start2 = timenow
+    #         window.update()
+    #
+    #     if timenow - start > ssvep_time:
+    #         break
 
-        if timenow - start2 >= time_on2:
-            square2.opacity = not square2.opacity
-            start2 = timenow
-            window.update()
-
-        if timenow - start > ssvep_time:
-            break
+    start, end = ssvepVideo(window, 7, 12)
 
     epoch_end = time.time()
     square1.autoDraw = False
@@ -283,7 +325,7 @@ def checkAns(window, yes_nos, iTrials):
                 event.clearEvents()
                 return False
 
-def makeYesnos(nYes=10, nNos=10):
+def makeYesnos(nYes, nNos):
     """Creates a randomly shuffled array of True and False values.
 
     Parameters
@@ -338,12 +380,12 @@ def trialByType(window, type, iTrials, data):
     if type == "S":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             elephantStim.autoDraw = True
             boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
             boxStim.autoDraw = True
         if yes_nos[iTrials-1] == False:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             elephantStim.autoDraw = True
             boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
             boxStim.autoDraw = True
@@ -357,10 +399,13 @@ def trialByType(window, type, iTrials, data):
 
         if check == True:
             window.flip()
-            start, stop = ssvepStim(window)
-            data.onsets.append(start)
-            data.durations.append(stop - start)
-            data.descriptions.append(yes_nos[iTrials-1])
+            ssvepStart, ssvepStop = ssvepStim(window)
+
+            data.trials = trialData(ssvepStart, ssvepStop - ssvepStart, yes_nos[iTrials-1], "SSVEP")
+
+            # data.onsets.append(start)
+            # data.durations.append(stop - start)
+            # data.descriptions.append(yes_nos[iTrials-1])
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             trialNumStim.autoDraw = False
@@ -378,8 +423,9 @@ def trialByType(window, type, iTrials, data):
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             window.flip()
-            trialByType(window, "S", iTrials)
+            trialByType(window, "S", iTrials, data)
 
+        return ssvepStart, ssvepStop
 
         #ask for the correct answer via SSVEP response
             #present the ssvep stimuli and record this time for annotations
@@ -388,10 +434,10 @@ def trialByType(window, type, iTrials, data):
     if type == "TMI":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
         if yes_nos[iTrials-1] == False:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
 
         elephantStim.draw()
@@ -414,17 +460,19 @@ def trialByType(window, type, iTrials, data):
             time.sleep(.5)
             window.flip()
             event.clearEvents()
-            trialByType(window, "TMI", iTrials)
+            trialByType(window, "TMI", iTrials, data)
+
+        return tmiStart, tmiStop
 
         #ask for the correct answer via TMI response
 
     if type == "LMI":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
         if yes_nos[iTrials-1] == False:
-            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+            elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
             boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
 
         elephantStim.draw()
@@ -448,6 +496,8 @@ def trialByType(window, type, iTrials, data):
             window.flip()
             event.clearEvents()
             trialByType(window, "LMI", iTrials)
+
+        return lmiStart, lmiStop
 
         #ask for the correct answer via LMI response
 
@@ -496,7 +546,7 @@ def getKeypress(window):
         return None
 
 
-def trials(window, nSsvepTrials, nMiTrials, nLmiTrials):
+def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
     """Runs the experimental protocol for the trial section of the experiment.
 
     Parameters
@@ -505,29 +555,42 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials):
         Visual window object.
     nSsvepTrials : int
         The number of SSVEP trials to repeat.
+            * MUST BE EVEN
     nMiTrials : int
         The number of traditional MI trials to repeat.
+            * MUST BE EVEN
     nLmiTrials : int
         The number of laryngeal MI trials to repeat.
+            * MUST BE EVEN
+    data : obj
+        This is the expData class object which will hold the important data for the experiment.
     """
     global yes_nos
-    yes_nos =  makeYesnos(5, 5) + makeYesnos(5, 5) + makeYesnos(5, 5)
+    yes_nos =  makeYesnos(nSsvepTrials//2, nSsvepTrials//2) + makeYesnos(nMiTrials//2, nMiTrials//2) + makeYesnos(nLmiTrials//2, nLmiTrials//2)
     iTrials = 1 #the current trial number intialized to 1
+
 
     #repeat the number of ssvep trials
     while iTrials <= nSsvepTrials:
-        #trialByType(window, "S", iTrials, data)######################################
+        #print the relevant data for expData:
+        #   expData
+        start, stop = trialByType(window, "S", iTrials, data)
+        expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
+        print("first onset is:" + str(expData.dataTrials.onset))
+        print("duration is:" + str(expData.dataTrials.duration))
+        print("description is:" + str(expData.dataTrials.description))
+        print("label is:" + str(expData.dataTrials.label))
+        print("good news")
         iTrials = iTrials + 1
 
-    #iTrials = 1
     #repeat the number of traditional MI trials
-    while iTrials <= iTrials + nMiTrials:
-        #trialByType(window, "TMI", iTrials, data)######################################
+    while iTrials <= nSsvepTrials + nMiTrials:
+        trialByType(window, "TMI", iTrials, data)
         iTrials = iTrials + 1
 
     #repeat the number of laryngeal MI trials
-    while iTrials <= iTrials + nLmiTrials:
-        trialByType(window, "LMI", iTrials, data)######################################
+    while iTrials <= nSsvepTrials + nMiTrials + nLmiTrials:
+        trialByType(window, "LMI", iTrials, data)
         iTrials = iTrials + 1
 
     return 1
@@ -556,7 +619,7 @@ def example(window):
 
     exText3 = "this"
     exText3_Stim = visual.TextStim(win=window, text=exText3, pos=(0, .7))
-    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
     boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor=(252, 3, 32))
     corAns = "Yes"
     corAns_Stim = visual.TextStim(win=window, text=corAns, pos=(0, -.5))
@@ -571,7 +634,7 @@ def example(window):
 
     exText4 = "or this"
     exText4_Stim = visual.TextStim(win=window, text=exText4, pos=(0, .7))
-    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask", size=.4)
+    elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
     boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor=(252, 3, 32))
     corAns = "NO"
     corAns_Stim = visual.TextStim(win=window, text=corAns, pos=(0, -.7))
@@ -637,7 +700,7 @@ def protocol(window):
 
     instructions(window)
     example(window)
-    trials(window, 10, 10, 10, data)
+    trials(window, 2, 2, 2, data)
 
     waitForArrow(window)
     window.close()
