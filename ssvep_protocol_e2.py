@@ -29,7 +29,7 @@ class trialData:
             T - traditional motor imagery
             L - laryngeal motor imagery
     """
-    def __init__(self, onset, duration, description, label):
+    def __init__(self, onset, duration, description, label, flags=None):
         # self.startTime = startTime
         # self.stopTime = stopTime if stopTime != 0 else None
         # self.label = label
@@ -38,9 +38,7 @@ class trialData:
         self.duration = duration
         self.description = description
         self.label = label
-
-    def updateDur(self, stop):
-        self.duration = self.onset - stop
+        self.flags = flags
 
 class expData:
     """ This is a class to store the important information about the experiment for when the experiment is over.
@@ -72,12 +70,17 @@ class expData:
         #the eeg data
         #the date and time
         self.dataTrials = []
+        self.frstOnset = None
 
     def addTrial(self, onset, duration, description, label):
         if hasattr("self", "dataTrials") != True:
             self.dataTrials = trialData(onset, duration, description, label)
         else:
             self.dataTrials.append(trialData(onset, duration, description, label))
+
+    def addFrstOnset(self, frstOnset):
+        if hasattr("self", "frstOnset"):
+            self.frstOnset = frstOnset
 
     def startBCI(self, serialPort='COM4', wifi=False):
         """Starts the connection/stream of the openBCI headset
@@ -170,20 +173,62 @@ class expData:
 
         raw.save()
 
-def ssvepVideo(window, frequency_1, frequency_2):
+def chkDur(window, expData):
+    """Checks to see if the duration of the ssvep stimulus is the correct length.
+    Parameters
+    ----------
+        window : obj
+            Visual window object.
+        expData : obj
+            Object containing data about the experiment; particularly the duration of trials.
+    Returns
+    -------
+        status : str
+            Returns status if the duration is not between 4.9 and 5 seconds long.
+            Could be one of:
+                - "WARNING: The SSVEP was too long"
+                - "WARNING: The SSVEP was too short"
+            OR
+        int
+            Returns 1 if the duration was between 4.9 seconds and 5 seconds long.
+    """
+    if expData.dataTrials.duration > 5.1:
+        status = "WARNING: The SSVEP was too long"
+        # expData.dataTrials. = expData.dataTrials.label + "-"
+        return status
+    elif expData.dataTrials.duration < 4.9:
+        status = "WARNING: The SSVEP was too short"
+        return status
+    return 1
 
+def ssvepVideo(window, frequency_1, frequency_2):
+    """Checks to see if the duration of the ssvep stimulus is the correct length.
+    Parameters
+    ----------
+        window : obj
+            Visual window object.
+        frequency_1 : int
+            The frequency of SSVEP which will be displayed on the right as the YES response.
+        frequency_2 : int
+            The frequency of SSVEP which will be displayed on the left as the NO response.
+    Returns
+    -------
+        start : flt
+            The start time of the SSVEP video.
+        end : flt
+            The end time of the SSVEP video
+    """
     Hz_7 = visual.MovieStim3(window, 'f'+ str(frequency_1) +'Hz.avi', size=(200, 200), pos=[250, 0]) #7 Hz is on the right so it represents yes
     Hz_12 = visual.MovieStim3(window, 'f'+ str(frequency_2) +'Hz.avi', size=(200, 200), pos=[-250, 0])
 
-    clock = core.Clock()
 
     while Hz_7.status != -1:
-        if "start" not in locals(): start = clock.getTime()
         Hz_7.draw()
         Hz_12.draw()
+        if "start" not in locals(): start = time.time()
         window.flip()
 
-    end = clock.getTime()
+    end = time.time()
 
     return start, end
 
@@ -224,11 +269,10 @@ def miPrompt(window, miType):
     tmiPromptStim_2.draw()
     window.flip()
 
-    clock = core.Clock()
 
-    start = clock.getTime()
+    start = time.time()
     time.sleep(holdTime)
-    stop = clock.getTime()
+    stop = time.time()
 
     window.flip()
 
@@ -247,46 +291,18 @@ def ssvepStim(window):
     list of floats
         the times the ssvep stimulus started and time it ended
     """
-    ssvep_frequencies: list=[7.5, 15]
-    ssvep_time: int=5
     square1 = visual.Rect(win=window, size=(0.5, 0.5), pos=(-0.6, 0), fillColor='white', opacity=0, autoDraw=True)
     square2 = visual.Rect(win=window, size=(0.5, 0.5), pos=(0.6, 0), fillColor='white', opacity=0, autoDraw=True)
 
-    clock = core.Clock()
-    frequency1, frequency2 = ssvep_frequencies  # in Hz
-    time_on1 = 1 / (frequency1 * 2)  # should be on for have a cycle, off for half a cycle
-    time_on2 = 1 / (frequency2 * 2)
-
-    start = clock.getTime()
-    start1 = start
-    start2 = start1  # copies it; changing start1 does not change start2
-    epoch_start = time.time()
-    # while True:
-    #     timenow = clock.getTime()
-    #     if timenow - start1 >= time_on1:
-    #         square1.opacity = not square1.opacity
-    #         start1 = timenow
-    #         window.update()
-    #
-    #     if timenow - start2 >= time_on2:
-    #         square2.opacity = not square2.opacity
-    #         start2 = timenow
-    #         window.update()
-    #
-    #     if timenow - start > ssvep_time:
-    #         break
-
     start, end = ssvepVideo(window, 7, 12)
 
-    epoch_end = time.time()
     square1.autoDraw = False
     square2.autoDraw = False
     window.flip()
-    return epoch_start, epoch_end
+    return start, end
 
 def checkAns(window, yes_nos, iTrials):
     """Checks to see if the correct answer was given to the primary stage of the experimental trial.
-
     Parameters
     ----------
     window : obj
@@ -427,13 +443,11 @@ def trialByType(window, type, iTrials, data):
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             window.flip()
-            print("test 1")
             ssvepStart, ssvepStop = trialByType(window, "S", iTrials, data)
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             trialNumStim.autoDraw = False
             window.flip()
-            print("test 2")
 
         return ssvepStart, ssvepStop
 
@@ -446,10 +460,14 @@ def trialByType(window, type, iTrials, data):
         #present the stimulus
         if yes_nos[iTrials-1] == True:
             elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            elephantStim.autoDraw = True
             boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
+            boxStim.autoDraw = True
         if yes_nos[iTrials-1] == False:
             elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            elephantStim.autoDraw = True
             boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
+            boxStim.autoDraw = True
 
         elephantStim.draw()
         boxStim.draw()
@@ -466,7 +484,6 @@ def trialByType(window, type, iTrials, data):
             boxStim.autoDraw = False
             trialNumStim.autoDraw = False
             window.flip()
-            return tmiStart, tmiStop
 
         if check == False:
             retryText = "Please enter the correct answer before continuing"
@@ -476,12 +493,13 @@ def trialByType(window, type, iTrials, data):
             time.sleep(.5)
             window.flip()
             event.clearEvents()
-            trialByType(window, "TMI", iTrials, data)
+            tmiStart, tmiStop = trialByType(window, "TMI", iTrials, data)
             elephantStim.autoDraw = False
             boxStim.autoDraw = False
             trialNumStim.autoDraw = False
             window.flip()
 
+        return tmiStart, tmiStop
 
         #ask for the correct answer via TMI response
 
@@ -489,10 +507,14 @@ def trialByType(window, type, iTrials, data):
         #present the stimulus
         if yes_nos[iTrials-1] == True:
             elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            elephantStim.autoDraw = True
             boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
+            boxStim.autoDraw = True
         if yes_nos[iTrials-1] == False:
             elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
+            elephantStim.autoDraw = True
             boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
+            boxStim.autoDraw = True
 
         elephantStim.draw()
         boxStim.draw()
@@ -593,6 +615,7 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
         This is the expData class object which will hold the important data for the experiment.
     """
     global yes_nos
+    global frstOnset
     yes_nos =  makeYesnos(nSsvepTrials//2, nSsvepTrials//2) + makeYesnos(nMiTrials//2, nMiTrials//2) + makeYesnos(nLmiTrials//2, nLmiTrials//2)
     iTrials = 1 #the current trial number intialized to 1
 
@@ -603,24 +626,50 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
         #   expData
         start, stop = trialByType(window, "S", iTrials, data)
         expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
-        print("first onset is:" + str(expData.dataTrials.onset))
-        print("duration is:" + str(expData.dataTrials.duration))
-        print("description is:" + str(expData.dataTrials.description))
-        print("label is:" + str(expData.dataTrials.label))
-        print("good news")
+        print("onset is: " + str(expData.dataTrials.onset))
+        print("duration is: " + str(expData.dataTrials.duration))
+        print("description is: " + str(expData.dataTrials.description))
+        print("label is: " + str(expData.dataTrials.label))
+
+        slowSsvepTxt = chkDur(window, expData)
+
+        if type(slowSsvepTxt) == str:
+            slowSsvepStim = visual.TextStim(win=window, text=slowSsvepTxt, color="red")
+            slowSsvepStim.draw()
+            window.flip()
+            time.sleep(2)
+
+        if iTrials == 1:
+            frstOnset = expData.dataTrials.onset
+
         iTrials = iTrials + 1
 
     #repeat the number of traditional MI trials
     while iTrials <= nSsvepTrials + nMiTrials:
-        trialByType(window, "TMI", iTrials, data)
+        start, stop = trialByType(window, "TMI", iTrials, data)
+        expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "TMI")
+        print("onset is: " + str(expData.dataTrials.onset))
+        print("duration is: " + str(expData.dataTrials.duration))
+        print("description is: " + str(expData.dataTrials.description))
+        print("label is: " + str(expData.dataTrials.label))
+        if iTrials == 1:
+            print("test 1")
+            frstOnset = expData.dataTrials.onset
         iTrials = iTrials + 1
 
     #repeat the number of laryngeal MI trials
     while iTrials <= nSsvepTrials + nMiTrials + nLmiTrials:
-        trialByType(window, "LMI", iTrials, data)
+        start, stop = trialByType(window, "LMI", iTrials, data)
+        expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "LMI")
+        print("onset is: " + str(expData.dataTrials.onset))
+        print("duration is: " + str(expData.dataTrials.duration))
+        print("description is: " + str(expData.dataTrials.description))
+        print("label is: " + str(expData.dataTrials.label))
+        if iTrials == 1:
+            print("test 2")
+            frstOnset = expData.dataTrials.onset
         iTrials = iTrials + 1
 
-    return 1
 
 def example(window):
     """Runs the experimental protocol for the example stimuli section of the experiment.
@@ -648,7 +697,7 @@ def example(window):
     exText3_Stim = visual.TextStim(win=window, text=exText3, pos=(0, .7))
     elephantStim = visual.ImageStim(win=window, pos=((0,.25)), image="lemmling-2D-cartoon-elephant.jpg", mask="lemmling-2D-cartoon-elephant-transparency-mask.jpg", size=.4)
     boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
-    corAns = "Yes"
+    corAns = "YES"
     corAns_Stim = visual.TextStim(win=window, text=corAns, pos=(0, -.5))
 
     exText3_Stim.draw()
@@ -727,10 +776,16 @@ def protocol(window):
 
     instructions(window)
     example(window)
-    trials(window, 0, 0, 2, data)
+    trials(window, 2, 2, 2, data)
 
     waitForArrow(window)
     window.close()
+
+    if "frstOnset" in globals():
+        data.frstOnset = frstOnset
+        print("more good news")
+    else:
+        print("The first onset was not set in ssvepVideo")
 
 def main():
     """Main function for running the experimental protocol.
