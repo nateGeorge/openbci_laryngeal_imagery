@@ -173,7 +173,7 @@ class expData:
 
         raw.save()
 
-def chkDur(window, expData):
+def chkDur(window, expData, threshold=.1):
     """Checks to see if the duration of the ssvep stimulus is the correct length.
     Parameters
     ----------
@@ -181,6 +181,8 @@ def chkDur(window, expData):
             Visual window object.
         expData : obj
             Object containing data about the experiment; particularly the duration of trials.
+        threshold : flt
+            A floating point number representing the displacement from 5 seconds that the trial should have.
     Returns
     -------
         status : str
@@ -192,12 +194,15 @@ def chkDur(window, expData):
         int
             Returns 1 if the duration was between 4.9 seconds and 5 seconds long.
     """
-    if expData.dataTrials.duration > 5.1:
+    if expData.dataTrials.duration > 5 + threshold:
         status = "WARNING: The SSVEP was too long"
-        # expData.dataTrials. = expData.dataTrials.label + "-"
+        expData.dataTrials.flags = "too long"
+        print(expData.dataTrials.flags)
         return status
-    elif expData.dataTrials.duration < 4.9:
+    elif expData.dataTrials.duration < 5 - threshold:
         status = "WARNING: The SSVEP was too short"
+        expData.dataTrials.flags = "too short"
+        print(expData.dataTrials.flags)
         return status
     return 1
 
@@ -228,6 +233,7 @@ def ssvepVideo(window, frequency_1, frequency_2):
         if "start" not in locals(): start = time.time()
         window.flip()
 
+    time.sleep(1)
     end = time.time()
 
     return start, end
@@ -776,7 +782,7 @@ def protocol(window):
 
     instructions(window)
     example(window)
-    trials(window, 2, 2, 2, data)
+    trials(window, 2, 0, 0, data)
 
     waitForArrow(window)
     window.close()
