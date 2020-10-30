@@ -73,16 +73,18 @@ class expData:
         self.frstOnset = None
 
     def addTrial(self, onset, duration, description, label):
-        if hasattr("self", "dataTrials") != True:
-            self.dataTrials = trialData(onset, duration, description, label)
+        if hasattr("data", "dataTrials") != True:
+            print("created first trial in dataTrials")
+            self.dataTrials = trialData(onset, duration, description, label)]
         else:
+            print("appended dataTrials")
             self.dataTrials.append(trialData(onset, duration, description, label))
 
     def addFrstOnset(self, frstOnset):
         if hasattr("self", "frstOnset"):
             self.frstOnset = frstOnset
 
-    def startBCI(self, serialPort='COM4', wifi=False):
+    def startBCI(self, synthetic=False, serialPort='COM4', wifi=False):
         """Starts the connection/stream of the openBCI headset
 
         Parameters
@@ -105,6 +107,8 @@ class expData:
             params.ip_address = '10.0.0.220'
             params.ip_port = 6227
             board = BoardShim(6, params)
+        elif synthetic:
+            board = BoardShim(-1, params)
         else:  # bluetooth
             params.serial_port = serialPort
             board = BoardShim(2, params)
@@ -157,7 +161,9 @@ class expData:
 
         raw = mne.io.RawArray(rawData[1:17], info) #save this RawArray as a pickle file
 
-        annot = mne.Annotations(self.onsets, self.durations, self.descriptions)
+        # onsets_list = [t.onset for t in self.dataTrials]
+        # desc_list = [';'.join([t.description, t.label, t.flag]) for t in self.dataTrials]
+        annot = mne.Annotations(onsets_list, self.durations, self.descriptions)
 
         raw.set_annotations(annot)
 
@@ -173,7 +179,7 @@ class expData:
 
         raw.save()
 
-def chkDur(window, expData, threshold=.1):
+def chkDur(window, expData, iTrials, threshold=.1):
     """Checks to see if the duration of the ssvep stimulus is the correct length.
     Parameters
     ----------
@@ -194,12 +200,12 @@ def chkDur(window, expData, threshold=.1):
         int
             Returns 1 if the duration was between 4.9 seconds and 5 seconds long.
     """
-    if expData.dataTrials.duration > 5 + threshold:
+    if expData.dataTrials[iTrials - 1].duration > 5 + threshold:
         status = "WARNING: The SSVEP was too long"
-        expData.dataTrials.flags = "too long"
-        print(expData.dataTrials.flags)
+        expData.dataTrials[iTrials - 1].flags = "too long"
+        print(expData.dataTrials[iTrials - 1].flags)
         return status
-    elif expData.dataTrials.duration < 5 - threshold:
+    elif expData.dataTrials[iTrials - 1].duration < 5 - threshold:
         status = "WARNING: The SSVEP was too short"
         expData.dataTrials.flags = "too short"
         print(expData.dataTrials.flags)
@@ -233,7 +239,6 @@ def ssvepVideo(window, frequency_1, frequency_2):
         if "start" not in locals(): start = time.time()
         window.flip()
 
-    time.sleep(1)
     end = time.time()
 
     return start, end
@@ -631,13 +636,21 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
         #print the relevant data for expData:
         #   expData
         start, stop = trialByType(window, "S", iTrials, data)
-        expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
-        print("onset is: " + str(expData.dataTrials.onset))
-        print("duration is: " + str(expData.dataTrials.duration))
-        print("description is: " + str(expData.dataTrials.description))
-        print("label is: " + str(expData.dataTrials.label))
+        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
 
-        slowSsvepTxt = chkDur(window, expData)
+
+        if hasattr("data", "dataTrials") == True:
+            print("data has attrribute dataTrials")
+        else:
+            print("data doesn't have attrribute dataTrials")
+
+
+        print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
+        print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
+        print("description is: " + str(data.dataTrials[iTrials - 1].description))
+        print("label is: " + str(data.dataTrials[iTrials - 1].label))
+
+        slowSsvepTxt = chkDur(window, data, iTrials)
 
         if type(slowSsvepTxt) == str:
             slowSsvepStim = visual.TextStim(win=window, text=slowSsvepTxt, color="red")
@@ -646,14 +659,14 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
             time.sleep(2)
 
         if iTrials == 1:
-            frstOnset = expData.dataTrials.onset
+            frstOnset = data.dataTrials[iTrials - 1].onset
 
         iTrials = iTrials + 1
 
     #repeat the number of traditional MI trials
     while iTrials <= nSsvepTrials + nMiTrials:
         start, stop = trialByType(window, "TMI", iTrials, data)
-        expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "TMI")
+        data.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "TMI") #switch expData to data
         print("onset is: " + str(expData.dataTrials.onset))
         print("duration is: " + str(expData.dataTrials.duration))
         print("description is: " + str(expData.dataTrials.description))
@@ -803,6 +816,6 @@ def main():
 
 
 
-
-main()
-core.quit()
+if __name__ == '__main__':
+    main()
+    core.quit()
