@@ -1,17 +1,20 @@
 import time
 import datetime
 import sys
+import os
+import pickle
+
+import mne
 import numpy as np
 import pandas as pd
-from psychopy import visual, core, event
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import matplotlib.pyplot as plt
 from scipy import signal
+from psychopy import visual, core, event
 from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
-import tkinter
-from tkinter import filedialog
-from tkinter.filedialog import asksaveasfile
+from psychopy import gui
+
 
 class trialData:
     """ This is a class that stores trial data.
@@ -29,7 +32,7 @@ class trialData:
             T - traditional motor imagery
             L - laryngeal motor imagery
     """
-    def __init__(self, onset, duration, description, label, flags=None):
+    def __init__(self, onset, duration, description, label, flag=""):
         # self.startTime = startTime
         # self.stopTime = stopTime if stopTime != 0 else None
         # self.label = label
@@ -38,7 +41,7 @@ class trialData:
         self.duration = duration
         self.description = description
         self.label = label
-        self.flags = flags
+        self.flag = flag
 
 class expData:
     """ This is a class to store the important information about the experiment for when the experiment is over.
@@ -71,11 +74,12 @@ class expData:
         #the date and time
         self.dataTrials = []
         self.frstOnset = None
+        self.ID = None
 
     def addTrial(self, onset, duration, description, label):
-        if hasattr("data", "dataTrials") != True:
+        if hasattr(self, "dataTrials") != True:
             print("created first trial in dataTrials")
-            self.dataTrials = trialData(onset, duration, description, label)]
+            self.dataTrials = [trialData(onset, duration, description, label)]
         else:
             print("appended dataTrials")
             self.dataTrials.append(trialData(onset, duration, description, label))
@@ -84,34 +88,42 @@ class expData:
         if hasattr("self", "frstOnset"):
             self.frstOnset = frstOnset
 
-    def startBCI(self, synthetic=False, serialPort='COM4', wifi=False):
+    def startBCI(self, brd, serialPort):
         """Starts the connection/stream of the openBCI headset
 
         Parameters
         ----------
+        brd : str
+            Type of board connection to be used.
+            Could be one of:
+                "Synthetic"
+                "Bluetooth"
+                "WiFi"
         serialPort : str
             The serial port for connecting to the headset via bluetooth.
             Could be one of:
                 COM4
                 COM3
                 /dev/ttyUSB0
-        wifi : bool
-            Whether to use wifi connection or not (bluetooth instead)
         """
         #connect to headset
         params = BrainFlowInputParams()
 
         # cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
         # bluetooth is 2
-        if wifi:
+        if brd == "WiFi":
             params.ip_address = '10.0.0.220'
             params.ip_port = 6227
             board = BoardShim(6, params)
-        elif synthetic:
+            self.sfreq = 1000
+        elif brd == "Synthetic":
             board = BoardShim(-1, params)
-        else:  # bluetooth
+            self.sfreq = 250
+        elif brd == "Bluetooth":
             params.serial_port = serialPort
             board = BoardShim(2, params)
+            self.sfreq = 125
+
 
 
         board.prepare_session()
@@ -135,7 +147,7 @@ class expData:
         time.sleep(3)
         rawData = self.board.get_board_data() #save this rawData object as a pickle file
         self.board.stop_stream()
-        board.release_session() #this is for disconnecting the headset
+        self.board.release_session() #this is for disconnecting the headset
 
         number_to_1020 = {1: 'Fp1',
                  2: 'Fp2',
@@ -157,27 +169,26 @@ class expData:
         ch_types = ['eeg'] * 16
         ch_names = list(number_to_1020.values())
 
-        info = mne.create_info(ch_names=ch_names, sfreq=125, ch_types=ch_types)
+        info = mne.create_info(ch_names=ch_names, sfreq=self.sfreq, ch_types=ch_types)
 
         raw = mne.io.RawArray(rawData[1:17], info) #save this RawArray as a pickle file
 
-        # onsets_list = [t.onset for t in self.dataTrials]
-        # desc_list = [';'.join([t.description, t.label, t.flag]) for t in self.dataTrials]
-        annot = mne.Annotations(onsets_list, self.durations, self.descriptions)
+        onsets_list = [t.onset for t in self.dataTrials]
+        durations_list = [t.duration for t in self.dataTrials]
+        desc_list = ['-'.join([str(t.description), t.label, t.flag]) for t in self.dataTrials]
+        annot = mne.Annotations(onsets_list, durations_list, desc_list)
 
         raw.set_annotations(annot)
 
-        montage = make_standard_montage('standard_1020')
+
+
+        montage = mne.channels.make_standard_montage('standard_1020')
         raw.set_montage(montage)
 
+        raw.save(f"BCIproject_trial-{self.ID}_raw.fif.gz")
 
-
-        files = [('All Files', '*.*'),
-         ('Python Files', '*.py'),
-         ('Text Document', '*.txt')]
-        file = asksaveasfile(filetypes = files, defaultextension = files)
-
-        raw.save()
+        with open(f"BCIproject_trial-{self.ID}.pk", "wb") as f:
+            pickle.dump(rawData, f)
 
 def chkDur(window, expData, iTrials, threshold=.1):
     """Checks to see if the duration of the ssvep stimulus is the correct length.
@@ -202,13 +213,13 @@ def chkDur(window, expData, iTrials, threshold=.1):
     """
     if expData.dataTrials[iTrials - 1].duration > 5 + threshold:
         status = "WARNING: The SSVEP was too long"
-        expData.dataTrials[iTrials - 1].flags = "too long"
-        print(expData.dataTrials[iTrials - 1].flags)
+        expData.dataTrials[iTrials - 1].flag = "too long"
+        print(expData.dataTrials[iTrials - 1].flag)
         return status
     elif expData.dataTrials[iTrials - 1].duration < 5 - threshold:
         status = "WARNING: The SSVEP was too short"
-        expData.dataTrials.flags = "too short"
-        print(expData.dataTrials.flags)
+        expData.dataTrials.flag = "too short"
+        print(expData.dataTrials.flag)
         return status
     return 1
 
@@ -639,11 +650,10 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
         data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
 
 
-        if hasattr("data", "dataTrials") == True:
+        if hasattr(data, "dataTrials") == True:
             print("data has attrribute dataTrials")
         else:
             print("data doesn't have attrribute dataTrials")
-
 
         print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
         print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
@@ -793,18 +803,28 @@ def protocol(window):
 
     data = expData()
 
+    while True:
+        myDlg = gui.Dlg(title="BCI Experiment")
+        myDlg.addField('Experiment ID Number: ')
+        myDlg.addField('Board Type:', choices=["Bluetooth", "WiFi", "Synthetic"])
+        myDlg.addField('Serial Port (bluetooth only):', "COM4")
+        settings = myDlg.show()  # show dialog and wait for OK or Cancel
+        if myDlg.OK:  # or if ok_data is not None
+            data.ID = settings[0]
+            if f"BCIproject_trial-{data.ID}.pk" in os.listdir():
+                continue
+            if settings[0] != '':
+                break
+
     instructions(window)
     example(window)
+    data.startBCI(settings[1], settings[2])
     trials(window, 2, 0, 0, data)
+    data.stopBCI()
+
 
     waitForArrow(window)
     window.close()
-
-    if "frstOnset" in globals():
-        data.frstOnset = frstOnset
-        print("more good news")
-    else:
-        print("The first onset was not set in ssvepVideo")
 
 def main():
     """Main function for running the experimental protocol.
