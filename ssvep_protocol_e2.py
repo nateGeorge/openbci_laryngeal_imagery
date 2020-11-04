@@ -190,13 +190,13 @@ class expData:
         with open(f"BCIproject_trial-{self.ID}.pk", "wb") as f:
             pickle.dump(rawData, f)
 
-def chkDur(window, expData, iTrials, threshold=.1):
+def chkDur(window, data, iTrials, threshold=.1):
     """Checks to see if the duration of the ssvep stimulus is the correct length.
     Parameters
     ----------
         window : obj
             Visual window object.
-        expData : obj
+        data : obj
             Object containing data about the experiment; particularly the duration of trials.
         threshold : flt
             A floating point number representing the displacement from 5 seconds that the trial should have.
@@ -211,15 +211,15 @@ def chkDur(window, expData, iTrials, threshold=.1):
         int
             Returns 1 if the duration was between 4.9 seconds and 5 seconds long.
     """
-    if expData.dataTrials[iTrials - 1].duration > 5 + threshold:
+    if data.dataTrials[iTrials - 1].duration > 5 + threshold:
         status = "WARNING: The SSVEP was too long"
-        expData.dataTrials[iTrials - 1].flag = "too long"
-        print(expData.dataTrials[iTrials - 1].flag)
+        data.dataTrials[iTrials - 1].flag = "too long"
+        print(data.dataTrials[iTrials - 1].flag)
         return status
-    elif expData.dataTrials[iTrials - 1].duration < 5 - threshold:
+    elif data.dataTrials[iTrials - 1].duration < 5 - threshold:
         status = "WARNING: The SSVEP was too short"
-        expData.dataTrials.flag = "too short"
-        print(expData.dataTrials.flag)
+        data.dataTrials.flag = "too short"
+        print(data.dataTrials.flag)
         return status
     return 1
 
@@ -644,8 +644,6 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
 
     #repeat the number of ssvep trials
     while iTrials <= nSsvepTrials:
-        #print the relevant data for expData:
-        #   expData
         start, stop = trialByType(window, "S", iTrials, data)
         data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
 
@@ -676,27 +674,27 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
     #repeat the number of traditional MI trials
     while iTrials <= nSsvepTrials + nMiTrials:
         start, stop = trialByType(window, "TMI", iTrials, data)
-        data.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "TMI") #switch expData to data
-        print("onset is: " + str(expData.dataTrials.onset))
-        print("duration is: " + str(expData.dataTrials.duration))
-        print("description is: " + str(expData.dataTrials.description))
-        print("label is: " + str(expData.dataTrials.label))
+        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "TMI")
+        print("onset is: " + str(data.dataTrials.onset))
+        print("duration is: " + str(data.dataTrials.duration))
+        print("description is: " + str(data.dataTrials.description))
+        print("label is: " + str(data.dataTrials.label))
         if iTrials == 1:
             print("test 1")
-            frstOnset = expData.dataTrials.onset
+            frstOnset = data.dataTrials.onset
         iTrials = iTrials + 1
 
     #repeat the number of laryngeal MI trials
     while iTrials <= nSsvepTrials + nMiTrials + nLmiTrials:
         start, stop = trialByType(window, "LMI", iTrials, data)
-        expData.addTrial(expData, start, (stop - start), yes_nos[iTrials - 1], "LMI")
-        print("onset is: " + str(expData.dataTrials.onset))
-        print("duration is: " + str(expData.dataTrials.duration))
-        print("description is: " + str(expData.dataTrials.description))
-        print("label is: " + str(expData.dataTrials.label))
+        data.addTrial( start, (stop - start), yes_nos[iTrials - 1], "LMI")
+        print("onset is: " + str(data.dataTrials.onset))
+        print("duration is: " + str(data.dataTrials.duration))
+        print("description is: " + str(data.dataTrials.description))
+        print("label is: " + str(data.dataTrials.label))
         if iTrials == 1:
             print("test 2")
-            frstOnset = expData.dataTrials.onset
+            frstOnset = data.dataTrials.onset
         iTrials = iTrials + 1
 
 
@@ -819,7 +817,7 @@ def protocol(window):
     instructions(window)
     example(window)
     data.startBCI(settings[1], settings[2])
-    trials(window, 2, 0, 0, data)
+    trials(window, 2, 2, 2, data)
     data.stopBCI()
 
 
