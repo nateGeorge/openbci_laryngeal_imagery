@@ -675,26 +675,26 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
     while iTrials <= nSsvepTrials + nMiTrials:
         start, stop = trialByType(window, "TMI", iTrials, data)
         data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "TMI")
-        print("onset is: " + str(data.dataTrials.onset))
-        print("duration is: " + str(data.dataTrials.duration))
-        print("description is: " + str(data.dataTrials.description))
-        print("label is: " + str(data.dataTrials.label))
+        print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
+        print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
+        print("description is: " + str(data.dataTrials[iTrials - 1].description))
+        print("label is: " + str(data.dataTrials[iTrials - 1].label))
         if iTrials == 1:
             print("test 1")
-            frstOnset = data.dataTrials.onset
+            frstOnset = data.dataTrials[iTrials - 1].onset
         iTrials = iTrials + 1
 
     #repeat the number of laryngeal MI trials
     while iTrials <= nSsvepTrials + nMiTrials + nLmiTrials:
         start, stop = trialByType(window, "LMI", iTrials, data)
         data.addTrial( start, (stop - start), yes_nos[iTrials - 1], "LMI")
-        print("onset is: " + str(data.dataTrials.onset))
-        print("duration is: " + str(data.dataTrials.duration))
-        print("description is: " + str(data.dataTrials.description))
-        print("label is: " + str(data.dataTrials.label))
+        print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
+        print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
+        print("description is: " + str(data.dataTrials[iTrials - 1].description))
+        print("label is: " + str(data.dataTrials[iTrials - 1].label))
         if iTrials == 1:
             print("test 2")
-            frstOnset = data.dataTrials.onset
+            frstOnset = data.dataTrials[iTrials - 1].onset
         iTrials = iTrials + 1
 
 
@@ -817,7 +817,7 @@ def protocol(window):
     instructions(window)
     example(window)
     data.startBCI(settings[1], settings[2])
-    trials(window, 2, 2, 2, data)
+    trials(window, 10, 10, 10, data)
     data.stopBCI()
 
 
