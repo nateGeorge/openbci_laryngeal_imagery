@@ -173,7 +173,11 @@ class expData:
 
         raw = mne.io.RawArray(rawData[1:17], info) #save this RawArray as a pickle file
 
-        onsets_list = [t.onset for t in self.dataTrials]
+        # onsets_list = []
+        # for t in self.dataTrials:
+        #     onsets_list.append((t.onset - rawData[-1,0]))
+
+        onsets_list = [(t.onset - rawData[-1,0]) for t in self.dataTrials]
         durations_list = [t.duration for t in self.dataTrials]
         desc_list = ['-'.join([str(t.description), t.label, t.flag]) for t in self.dataTrials]
         annot = mne.Annotations(onsets_list, durations_list, desc_list)
@@ -184,6 +188,8 @@ class expData:
 
         montage = mne.channels.make_standard_montage('standard_1020')
         raw.set_montage(montage)
+
+        #import ipdb; ipdb.set_trace()
 
         raw.save(f"BCIproject_trial-{self.ID}_raw.fif.gz")
 
@@ -799,6 +805,7 @@ def protocol(window):
         Visual window object.
     """
 
+    global data
     data = expData()
 
     while True:
@@ -817,12 +824,9 @@ def protocol(window):
     instructions(window)
     example(window)
     data.startBCI(settings[1], settings[2])
-    trials(window, 10, 10, 10, data)
-    data.stopBCI()
-
-
-    waitForArrow(window)
+    trials(window, 2, 0, 0, data)
     window.close()
+    data.stopBCI()
 
 def main():
     """Main function for running the experimental protocol.
@@ -830,7 +834,6 @@ def main():
     #t = timeData()
     window = visual.Window()
     protocol(window)
-    return 1
 
 
 
