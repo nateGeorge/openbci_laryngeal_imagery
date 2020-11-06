@@ -824,7 +824,7 @@ def protocol(window):
     instructions(window)
     example(window)
     data.startBCI(settings[1], settings[2])
-    trials(window, 2, 0, 0, data)
+    trials(window, 10, 10, 10, data)
     window.close()
     data.stopBCI()
 
