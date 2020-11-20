@@ -256,8 +256,8 @@ def ssvepVideo(window, frequency_1, frequency_2):
         end : flt
             The end time of the SSVEP video
     """
-    Hz_7 = visual.MovieStim3(window, 'f'+ str(frequency_1) +'Hz.avi', size=(200, 200), pos=[250, 0]) #7 Hz is on the right so it represents yes
-    Hz_12 = visual.MovieStim3(window, 'f'+ str(frequency_2) +'Hz.avi', size=(200, 200), pos=[-250, 0])
+    Hz_7 = visual.MovieStim3(window, 'media/f'+ str(frequency_1) +'Hz.avi', size=(200, 200), pos=[250, 0]) #7 Hz is on the right so it represents yes
+    Hz_12 = visual.MovieStim3(window, 'media/f'+ str(frequency_2) +'Hz.avi', size=(200, 200), pos=[-250, 0])
 
     while Hz_7.status != -1:
         Hz_7.draw()
@@ -791,7 +791,6 @@ def instructions(window):
     you respond again by looking at the flashing light on the right
     to respond yes, or the flashing light on the left to respond no.
     """
-    instrctsTxt = instrctsTxt_1 + instrctsTxt_2 + instrctsTxt_3
     instrct_stim = visual.TextStim(window, text=instrctsTxt_1)
     instrct_stim.draw()
     waitForArrow(window)
@@ -823,15 +822,17 @@ def protocol(window):
         settings = myDlg.show()  # show dialog and wait for OK or Cancel
         if myDlg.OK:  # or if ok_data is not None
             data.ID = settings[0]
-            if f"BCIproject_trial-{data.ID}.pk" in os.listdir():
+            if f"BCIproject_trial-{data.ID}.pk" in os.listdir('data'):
                 continue
             if settings[0] != '':
                 break
 
+    # window.winHandle.set_visible(True)
+    # window.winHandle.set_fullscreen(True)
     instructions(window)
     example(window)
     data.startBCI(settings[1], settings[2])
-    trials(window, 2, 2, 2, data)
+    trials(window, 10, 10, 10, data)
     window.close()
     data.stopBCI()
 
@@ -841,6 +842,7 @@ def main():
     """
     #t = timeData()
     window = visual.Window()
+    # window.winHandle.set_visible(False)
     protocol(window)
 
 
