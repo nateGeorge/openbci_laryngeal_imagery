@@ -149,12 +149,30 @@ class expData:
         self.board.stop_stream()
         self.board.release_session() #this is for disconnecting the headset
 
-        number_to_1020 = {1: 'Fp1',
-                 2: 'Fp2',
+        # dictionary for original sensory settings
+        # number_to_1020 = {1: 'Fp1',
+        #          2: 'Fp2',
+        #          3: 'C3',
+        #          4: 'C4',
+        #          5: 'T5',
+        #          6: 'T6',
+        #          7: 'O1',
+        #          8: 'O2',
+        #          9: 'F7',
+        #          10: 'F8',
+        #          11: 'F3',
+        #          12: 'F4',
+        #          13: 'T3',
+        #          14: 'T4',
+        #          15: 'P3',
+        #          16: 'P4'}
+
+        number_to_1020 = {1: 'Fc1',
+                 2: 'Fc2',
                  3: 'C3',
                  4: 'C4',
-                 5: 'T5',
-                 6: 'T6',
+                 5: 'Fc5',
+                 6: 'Fc6',
                  7: 'O1',
                  8: 'O2',
                  9: 'F7',
@@ -163,8 +181,8 @@ class expData:
                  12: 'F4',
                  13: 'T3',
                  14: 'T4',
-                 15: 'P3',
-                 16: 'P4'}
+                 15: 'Po3',
+                 16: 'Po4'}
 
         ch_types = ['eeg'] * 16
         ch_names = list(number_to_1020.values())
