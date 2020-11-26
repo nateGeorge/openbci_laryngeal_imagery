@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import mne
+from sklearn.svm import LinearSVC, SVC
 from scipy.signal import spectrogram
 from tkinter import filedialog
 from tkinter import *
@@ -18,7 +19,18 @@ class dataHandler:
         self.fs = fs
         self.ts = ts
 
-def get_epochs(type, channels=[7, 8, 15, 16]):
+def load_data(filename=""):
+    if filename=="":
+        root = Tk()
+        root.withdraw()
+        filename = filedialog.askopenfilename(initialdir = "/",title = "Select mne data file",filetypes = (("mne files","*.fif.gz *.fif"),("all files","*.*")))
+        return mne.io.read_raw_fif(filename, preload=True)
+    else:
+        return mne.io.read_raw_fif(filename, preload=True)
+
+
+
+def get_epochs(type, channels=["O1", "O2", "P3", "P4"], nperseg=125, noverlap=115):
     """Get epochs of eeg data
     Parameters
     ----------
@@ -31,9 +43,8 @@ def get_epochs(type, channels=[7, 8, 15, 16]):
 
     root = Tk()
     root.withdraw()
-    filename =  filedialog.askopenfilename(initialdir = "/",title = "Select mne data file",filetypes = (("mne files","*.fif.gz *.fif"),("all files","*.*")))
 
-    data = mne.io.read_raw_fif(filename, preload=True)
+    data = load_data(r"C:\Users\Owner\Documents\GitHub\openbci_laryngeal_imagery\data\BCIproject_trial-5_raw.fif.gz")
 
     data = data.crop(2)
 
@@ -42,7 +53,7 @@ def get_epochs(type, channels=[7, 8, 15, 16]):
     events, eventid = mne.events_from_annotations(data, regexp=f'False-{type}.*')
     picks = mne.pick_types(data.info, eeg=True)
 
-    f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None)
+    f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
     events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
     f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None)
@@ -58,8 +69,8 @@ def get_epochs(type, channels=[7, 8, 15, 16]):
             # frequency, time, intensity (shape fxt)
             f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
                                                 fs=125,
-                                                nperseg=125,
-                                                noverlap=115)
+                                                nperseg=nperseg,
+                                                noverlap=noverlap)
             specs.append(c_spec)
 
         f1_spec = np.mean(np.array(specs), axis=0)
@@ -81,8 +92,8 @@ def get_epochs(type, channels=[7, 8, 15, 16]):
             # frequency, time, intensity (shape fxt)
             f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
                                                 fs=125,
-                                                nperseg=125,
-                                                noverlap=115)
+                                                nperseg=nperseg,
+                                                noverlap=noverlap)
             specs.append(c_spec)
 
         f2_spec = np.mean(np.array(specs), axis=0)
@@ -92,6 +103,7 @@ def get_epochs(type, channels=[7, 8, 15, 16]):
 
     f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
+    return f1, f2
 
 
 
@@ -125,7 +137,40 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None):
 
             plt.savefig(filename)
 
+def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
+    num_train_samples = int(train_fraction * len(f1.specs))
+    idxs = list(range(len(f1.specs)))
+    train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
+    test_idxs = list(set(idxs).difference(set(train_idxs)))
+    test_idxs = list(set(idxs).difference(set(test_idxs))) # TODO: Should this be changed to test_idxs????
+    train_f1s = np.concatenate([f1.specs[i] for i in train_idxs], axis=1)
+    train_f2s = np.concatenate([f2.specs[i] for i in train_idxs], axis=1)
+    test_f1s = np.concatenate([f1.specs[i] for i in test_idxs], axis=1)
+    test_f2s = np.concatenate([f2.specs[i] for i in test_idxs], axis=1)
 
-# if __name__ == '__main__':
-#     main() #need to add command line argument for bci type
-#     core.quit()
+    train_features = np.concatenate((train_f1s, train_f2s), axis=-1)
+    train_targets = np.array([frequency_1] * train_f1s.shape[1] + [frequency_2] * train_f2s.shape[1])
+
+    train_features = train_features[:, train_idxs].T
+    train_targets = train_targets[train_idxs]
+
+    test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
+    test_targets = np.array([frequency_1] * test_f1s.shape[1] + [frequency_2] * test_f2s.shape[1])
+
+    test_features = test_features.T
+
+    features = np.concatenate((train_features, test_features), axis=0)
+
+    targets = np.concatenate((train_targets, test_targets), axis=0)
+
+
+    max_train_indx = train_f1s.shape[1] + train_f1s.shape[1] # I want to check with DR. George to make sure this is correct
+
+    return features, targets, max_train_indx
+
+
+def ml(features, targets, max_train_indx, C=0.01):
+    svc = SVC(C=C)
+    svc.fit(features, targets)
+    print('training accuracy:', svc.score(features[: max_train_indx], targets[: max_train_indx]))
+    print('testing accuracy:', svc.score(features[max_train_indx :], targets[max_train_indx:]))

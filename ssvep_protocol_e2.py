@@ -669,7 +669,7 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data):
     #repeat the number of ssvep trials
     while iTrials <= nSsvepTrials:
         start, stop = trialByType(window, "S", iTrials, data)
-        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
+        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "SSVEP") # better not to use a global variable here (yes_nos)
 
 
         if hasattr(data, "dataTrials") == True:
