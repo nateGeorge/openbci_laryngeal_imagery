@@ -13,7 +13,7 @@ The conda environment file is contained in openbci.yml. To install the environme
 `brainflow_test_wifi.py` - can be used to test connection and data collection from OpenBCI headset with a wifi connection
 `brainflow_test_bluetooth.py` - can be used to test connection and data collection from OpenBCI headset with a bluetooth connection
 `make_video.py` - creates SSVEP videos
-`ssvep_protocol_e2.py` (rename to `bci_data_collection.py`) - code for running the experiment and collection data
+`data_collection.py` - code for running the experiment and collection data
 
 ## Protocol for collecting data
 
