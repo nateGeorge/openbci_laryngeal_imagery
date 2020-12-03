@@ -16,7 +16,6 @@ from psychopy.visual import Window
 from psychopy import gui
 from PyQt5 import QtCore
 
-
 # elephant image and mask
 EL_IMG = "media/lemmling-2D-cartoon-elephant.jpg"
 EL_MASK = "media/lemmling-2D-cartoon-elephant-transparency-mask.jpg"
@@ -245,7 +244,43 @@ def chkDur(window, data, iTrials, threshold=.1):
         return status
 
 
-def miPrompt(window, miType):
+def showMIinstructions(window, miType, holdTime):
+    """Presents instructions for the traditional motor imagery (TMI) response.
+
+    Parameters
+    ----------
+    window : obj
+        Psychopy window object.
+    miType : string
+        Type of motor imagery which needs to be prompted
+        Could be one of:
+            t - Traditional
+            l - Laryngeal
+    """
+    if miType == 't':
+        responseInstr = ["imagine raising your right arm",
+                    "imagine raising your left arm"]
+    elif miType == 'l':
+        responseInstr = ["imagine making a humming sound",
+                        "rest and wait"]
+
+    #present a prompt that asks the participant to think about raising their right arm for yes and left arm for no
+    tmiPromptText_1 = f"For YES, {responseInstr[0]} for {str(holdTime)} seconds."
+    tmiPromptStim_1 = visual.TextStim(win=window,
+                                    text=tmiPromptText_1,
+                                    pos=(0.5, 0),
+                                    wrapWidth=0.5)
+    tmiPromptText_2 = f"For NO, {responseInstr[1]} for {str(holdTime)} seconds."
+    tmiPromptStim_2 = visual.TextStim(win=window,
+                                    text=tmiPromptText_2,
+                                    pos=(-0.5, 0),
+                                    wrapWidth=0.5)
+
+    tmiPromptStim_1.draw()
+    tmiPromptStim_2.draw()
+
+
+def miPrompt(window, miType, holdTime):
     """Presents the prompt for the traditional motor imagery (TMI) response.
 
     Parameters
@@ -263,31 +298,13 @@ def miPrompt(window, miType):
     list of floats
         the times the TMI response started and time it ended
     """
-    window.flip()
+    if miType == 't':
+        text = "Imagine raising arm."
+    elif miType == 'l':
+        text = "Imagine making a noise, or rest."
 
-    holdTime = 5 #how long the participant should imainge for
-
-    if miType == "t":
-        responseInstr = ["imagine raising your right arm",
-                        "imagine raising your left arm"]
-    elif miType == "l":
-        responseInstr = ["imagine making a high-pitch sound",
-                        "imagine making a low-pitch sound"]
-
-    #present a prompt that asks the participant to think about raising their right arm for yes and left arm for no
-    tmiPromptText_1 = f"For YES, {responseInstr[0]} for {str(holdTime)} seconds."
-    tmiPromptStim_1 = visual.TextStim(win=window,
-                                    text=tmiPromptText_1,
-                                    pos=(0.5, 0.3),
-                                    wrapWidth=.5)
-    tmiPromptText_2 = f"For NO, {responseInstr[1]} for {str(holdTime)} seconds."
-    tmiPromptStim_2 = visual.TextStim(win=window,
-                                    text=tmiPromptText_2,
-                                    pos=(-0.5, 0.3),
-                                    wrapWidth=.5)
-
-    tmiPromptStim_1.draw()
-    tmiPromptStim_2.draw()
+    tStim = visual.TextStim(window, text=text)
+    tStim.draw()
     window.flip()
 
     start = time.time()
@@ -295,6 +312,12 @@ def miPrompt(window, miType):
     stop = time.time()
 
     window.flip()
+    text = "Done."
+    tStim = visual.TextStim(window, text=text)
+    tStim.draw()
+    window.flip()
+    time.sleep(1)
+
 
     return start, stop
 
@@ -457,6 +480,7 @@ def trialByType(window, yes_nos, type, iTrials, data):
     -------
         Press q and p during the trial to exit
     """
+    holdTime = 5  # seconds for MI
     elephantStim = visual.ImageStim(win=window,
                                 pos=((0, 0.25)),
                                 image=EL_IMG,
@@ -494,7 +518,7 @@ def trialByType(window, yes_nos, type, iTrials, data):
             ssvepStart, ssvepStop = ssvepStim(window)
             data.trials = trialData(ssvepStart,
                                     ssvepStop - ssvepStart,
-                                    yes_nos[iTrials-1],
+                                    yes_nos[iTrials - 1],
                                     "SSVEP")
             window.flip()
         else:
@@ -512,18 +536,21 @@ def trialByType(window, yes_nos, type, iTrials, data):
     if type == "TMI":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
+            boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
         elif yes_nos[iTrials-1] == False:
-            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
+            boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
+
+        showMIinstructions(window, 't', holdTime)
+
         window.flip()
         check = checkAns(window, yes_nos, iTrials)
 
         if check == True:
             window.flip()
-            tmiStart, tmiStop = miPrompt(window, "t")
+            tmiStart, tmiStop = miPrompt(window, "t", holdTime)
             window.flip()
         else:
             retryText = "Please enter the correct answer before continuing"
@@ -541,18 +568,21 @@ def trialByType(window, yes_nos, type, iTrials, data):
     if type == "LMI":
         #present the stimulus
         if yes_nos[iTrials-1] == True:
-            boxStim = visual.Rect(win=window, pos=((0,.25)), lineColor="red")
+            boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
         if yes_nos[iTrials-1] == False:
-            boxStim = visual.Rect(win=window, pos=((0,-.25)), lineColor="red")
+            boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
+
+        showMIinstructions(window, 'l', holdTime)
+
         window.flip()
         check = checkAns(window, yes_nos, iTrials)
 
         if check == True:
             window.flip()
-            lmiStart, lmiStop = miPrompt(window, "l")
+            lmiStart, lmiStop = miPrompt(window, "l", holdTime)
             window.flip()
         else:
             retryText = "Please enter the correct answer before continuing"
@@ -808,7 +838,10 @@ def run_experiment(debug=False):
         dlg.addField('Board Type:', choices=["Bluetooth", "WiFi", "Synthetic"])
         dlg.addField('Serial Port (bluetooth only):', "COM4")
         # for Windows, this brings the dialogue to the front of the screen
-        dlg.setWindowFlags(dlg.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
+        dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # potentially help bring window to the front on other OSs
+        dlg.activateWindow()
+        dlg.raise_()
         exp_id.setFocus()  # start with cursor on experiment ID field
         settings = dlg.show()  # show dialog and wait for OK or Cancel
         if dlg.OK:  # or if ok_data is not None
@@ -816,7 +849,9 @@ def run_experiment(debug=False):
             if f"BCIproject_trial-{data.ID}.pk" in os.listdir('data'):
                 dlg = gui.Dlg(title="Error")
                 dlg.addText(f'Error: data with this trial number {data.ID} already exists.')
-                dlg.setWindowFlags(dlg.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+                dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+                dlg.activateWindow()
+                dlg.raise_()
                 dlg.show()
                 continue
             if settings[0] != '':
@@ -824,7 +859,9 @@ def run_experiment(debug=False):
             else:
                 dlg = gui.Dlg(title="Error")
                 dlg.addText('Please enter a valid number for the trial.')
-                dlg.setWindowFlags(dlg.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+                dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+                dlg.activateWindow()
+                dlg.raise_()
                 dlg.show()
         else:  # clicked cancel
             print('cancelling experiment')
@@ -839,7 +876,7 @@ def run_experiment(debug=False):
     
     instructions(window)
     example(window)
-    trials(window, 2, 2, 2, data, debug=debug)
+    trials(window, 0, 2, 2, data, debug=debug)
     window.close()
     data.stopBCI()
 
