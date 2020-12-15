@@ -78,7 +78,7 @@ def get_epochs(type, channels=["O1", "O2", "P3", "P4"], nperseg=125, noverlap=11
         f1_fs.append(f1_f)
         f1_ts.append(f1_t)
 
-    f1 = dataHandler(f1_specs, f1_fs, f1_ts)
+    f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
 
 
     f2_specs = []
@@ -138,6 +138,14 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None):
             plt.savefig(filename)
 
 def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
+    """Uses data from get_epochs() in f1 and f2 to create a list of features and targets.
+    Parameters
+    ----------
+    f1 : list
+        spectrograms corresponding to the first frequency (on the right, indicates true/yes)
+    f2 : list
+        spectrograms corresponding to the second frequency (on the left, indicates false/no)
+    """
     num_train_samples = int(train_fraction * len(f1.specs))
     idxs = list(range(len(f1.specs)))
     train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
@@ -169,8 +177,25 @@ def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
     return features, targets, max_train_indx
 
 
-def ml(features, targets, max_train_indx, C=0.01):
+def SVC(features, targets, max_train_indx, C=0.01):
+    """Does machine learning on data using a support vector classifier.
+
+    """
     svc = SVC(C=C)
     svc.fit(features, targets)
     print('training accuracy:', svc.score(features[: max_train_indx], targets[: max_train_indx]))
     print('testing accuracy:', svc.score(features[max_train_indx :], targets[max_train_indx:]))
+
+
+
+def CSP_LDA():
+    """Does machine learning on data using a support vector classifier.
+
+    """
+    # Assemble a classifier
+    lda = LinearDiscriminantAnalysis()
+    csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
+
+    # Use scikit-learn Pipeline with cross_val_score function
+    clf = Pipeline([('CSP', csp), ('LDA', lda)])
+    scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
