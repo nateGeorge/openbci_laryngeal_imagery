@@ -56,7 +56,7 @@ def get_epochs(type, channels=["O1", "O2", "P3", "P4"], nperseg=125, noverlap=11
     f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
     events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
-    f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None)
+    f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) # Should these values be changed to tmin=1, tmin=4
 
     f1_specs = []
     f1_fs = []
@@ -179,6 +179,8 @@ def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
 
 def SVC(features, targets, max_train_indx, C=0.01):
     """Does machine learning on data using a support vector classifier.
+    Parameters
+    ----------
 
     """
     svc = SVC(C=C)
@@ -188,10 +190,52 @@ def SVC(features, targets, max_train_indx, C=0.01):
 
 
 
-def CSP_LDA():
-    """Does machine learning on data using a support vector classifier.
+def CSP_LDA(type, filename=""):
+    """Does machine learning on data using common spatial patterns and Linear Discriminant Analysis.
+    Parameters
+    ----------
+    type : str
+        Could be one of:
+            TMI
+            LMI
+    filename : str
+        Name of file to load data from
 
     """
+    # need to get
+
+    if filename == "":
+        raw = load_data(r"C:\Users\Owner\Documents\GitHub\openbci_laryngeal_imagery\data\BCIproject_trial-5_raw.fif.gz")
+        raw.annotations.description
+    else:
+        raw = load_data(filename)
+
+    raw.filter(7., 30., fir_design='firwin', skip_by_annotation='edge') # Do I need to keep this: skip_by_annotation='edge'
+
+    event_id = dict(F=0, T=1) # F for false and T for true
+    tmin, tmax = -1., 4.
+
+    false_events, _ = mne.events_from_annotations(raw, regexp=f'False-{type}.*') # Need to combine false_events and true_events into events properly
+
+    true_events, _ = mne.events_from_annotations(raw, regexp=f'True-{type}.*')
+
+    picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
+
+    epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks, baseline=None, preload=True) #How do I properly create events from false_events and true_events. Also how do I use a - in the event_id dictionary???
+
+    epochs_train = epochs.copy().crop(tmin=1., tmax=2.)
+    labels = epochs.events[:, -1]
+
+    scores = []
+    epochs_data = epochs.get_data()
+    epochs_data_train = epochs_train.get_data()
+
+
+
+    cv = ShuffleSplit(10, test_size=0.2, random_state=42)
+    #cv_split = cv.split(epochs_data_train) #Do I need cv split?
+        # Don't uncomment the above line until I have a value for epochs_data_train
+
     # Assemble a classifier
     lda = LinearDiscriminantAnalysis()
     csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
