@@ -202,8 +202,6 @@ def CSP_LDA(type, filename=""):
         Name of file to load data from
 
     """
-    # need to get
-
     if filename == "":
         raw = load_data(r"C:\Users\Owner\Documents\GitHub\openbci_laryngeal_imagery\data\BCIproject_trial-5_raw.fif.gz")
         raw.annotations.description
