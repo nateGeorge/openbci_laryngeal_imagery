@@ -44,9 +44,11 @@ def load_many_data(filenames=FILENAMES):
     raw_data = []
 
     if filenames is None:
-        pass
         # open tkinter dialogue
             #multiple files selected at one time
+        root = Tk()
+        root.withdraw()
+        filenames = filedialog.askopenfilenames()
     for f in filenames:
         raw_data.append(load_data(f))
 
