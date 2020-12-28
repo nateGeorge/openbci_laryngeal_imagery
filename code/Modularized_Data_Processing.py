@@ -2,6 +2,7 @@
 #   a function for getting the epochs
 #   a function for making a spectrogram
 
+import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,6 +11,16 @@ from sklearn.svm import LinearSVC, SVC
 from scipy.signal import spectrogram
 from tkinter import filedialog
 from tkinter import *
+from sklearn.model_selection import ShuffleSplit, cross_val_score
+from mne.decoding import CSP
+from sklearn.pipeline import Pipeline
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_data\fifs\\"
+PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_data\fifs\\"
+FILENAME1 = PATH1 + "BCIproject_trial-S5_raw.fif.gz"
+FILENAME2 = ""
+FILENAMES = [PATH1 + f for f in glob.glob(PATH1 + '*.raw.fif.gz')]
 
 # make a class to hold information from get epochs
 
@@ -19,7 +30,7 @@ class dataHandler:
         self.fs = fs
         self.ts = ts
 
-def load_data(filename=""):
+def load_data(filename=FILENAME1):
     if filename=="":
         root = Tk()
         root.withdraw()
@@ -29,9 +40,27 @@ def load_data(filename=""):
         return mne.io.read_raw_fif(filename, preload=True)
 
 
+def load_many_data(filenames=FILENAMES):
+    raw_data = []
 
-def get_epochs(type, channels=["O1", "O2", "P3", "P4"], nperseg=125, noverlap=115):
-    """Get epochs of eeg data
+    if filenames is None:
+        pass
+        # open tkinter dialogue
+            #multiple files selected at one time
+    for f in filenames:
+        raw_data.append(load_data(f))
+
+    return mne.concatenate_raws(raw_data)
+
+
+
+def get_epochs(type,
+                filename=FILENAME1,
+                bandpass_range=(5, 50),
+                channels=["O1", "O2", "P3", "P4"],
+                nperseg=125,
+                noverlap=115):
+    """Get epochs of eeg data and creates spectograms.
     Parameters
     ----------
     type : str
@@ -39,20 +68,26 @@ def get_epochs(type, channels=["O1", "O2", "P3", "P4"], nperseg=125, noverlap=11
             SSVEP
             TMI
             LMI
+    filename : path to datafile (raw.fif.gz file)
+    bandpass_range : tuple of lower and upper bandpass bounds
+    channels : list of strings; channel names (defaults to SSVEP channels)
+    nperseg : int, Number of points per segment in spectrogram calculation;
+        defaults to frequency of bluetoot (125 Hz) which gives 1Hz resolution.
+        Increase to get higher resolution (e.g. 250 Hz for BT would be 0.5 resolution).
+    noverlap : int, Number of overlapping points for fourier transform window for
+        spectrogram calcuations. Increase for more time datapoints in spectrogram.
+        Cannot be greater than nperseg - 1.
     """
+    data = load_data(filename)
 
-    root = Tk()
-    root.withdraw()
-
-    data = load_data(r"C:\Users\Owner\Documents\GitHub\openbci_laryngeal_imagery\data\BCIproject_trial-5_raw.fif.gz")
-
+    # removed first 2 seconds of data
     data = data.crop(2)
+    # bandpass filter
+    data = data.filter(*bandpass_range)
 
-    data = data.filter(5, 50)
-
+    # get data for one class
     events, eventid = mne.events_from_annotations(data, regexp=f'False-{type}.*')
     picks = mne.pick_types(data.info, eeg=True)
-
     f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
     events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
@@ -104,8 +139,6 @@ def get_epochs(type, channels=["O1", "O2", "P3", "P4"], nperseg=125, noverlap=11
     f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
     return f1, f2
-
-
 
 
 def plot_spectrogram(ts, fs, spec, savefig=False, filename=None):
@@ -190,7 +223,7 @@ def SVC(features, targets, max_train_indx, C=0.01):
 
 
 
-def CSP_LDA(type, filename=""):
+def CSP_LDA(type, filename=FILENAME1):
     """Does machine learning on data using common spatial patterns and Linear Discriminant Analysis.
     Parameters
     ----------
@@ -203,32 +236,44 @@ def CSP_LDA(type, filename=""):
 
     """
     if filename == "":
-        raw = load_data(r"C:\Users\Owner\Documents\GitHub\openbci_laryngeal_imagery\data\BCIproject_trial-5_raw.fif.gz")
+        raw = load_data(filename)
         raw.annotations.description
     else:
         raw = load_data(filename)
 
     raw.filter(7., 30., fir_design='firwin', skip_by_annotation='edge') # Do I need to keep this: skip_by_annotation='edge'
 
-    event_id = dict(F=0, T=1) # F for false and T for true
-    tmin, tmax = -1., 4.
 
-    false_events, _ = mne.events_from_annotations(raw, regexp=f'False-{type}.*') # Need to combine false_events and true_events into events properly
+    event_id={'False-TMI-': 0, 'True-TMI-': 1}
+    tmin, tmax = 0, 5
 
-    true_events, _ = mne.events_from_annotations(raw, regexp=f'True-{type}.*')
+
+
+    # events, _ = mne.events_from_annotations(raw, event_id=event_id)
+    false_events, _ = mne.events_from_annotations(raw, event_id=event_id, regexp=f'False-{type}.*') # Need to combine false_events and true_events into events properly
+    true_events, _ = mne.events_from_annotations(raw, event_id=event_id, regexp=f'True-{type}.*')
 
     picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
 
-    epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks, baseline=None, preload=True) #How do I properly create events from false_events and true_events. Also how do I use a - in the event_id dictionary???
+    # Epochs = mne.Epochs(raw, events, event_id=event_id, tmin=tmin, tmax=tmax,
+    #                     proj=True, picks=picks, baseline=None, preload=True)
 
-    epochs_train = epochs.copy().crop(tmin=1., tmax=2.)
-    labels = epochs.events[:, -1]
+    fEpochs = mne.Epochs(raw, false_events, tmin=tmin, tmax=tmax, proj=True, picks=picks, baseline=None, preload=True) #How do I properly create events from false_events and true_events. Also how do I use a - in the event_id dictionary???
+    tEpochs = mne.Epochs(raw, true_events, tmin=tmin, tmax=tmax, proj=True, picks=picks, baseline=None, preload=True)
+
+    fEpochs_train = fEpochs[:4] #parameterize this stuff
+    tEpochs_train = tEpochs[:4]
+    fEpochs_test = fEpochs[-1]
+    tEpochs_test = tEpochs[-1]
+    epochs_train = mne.concatenate_epochs([fEpochs_train, tEpochs_train])
+    epochs_test = mne.concatenate_epochs([fEpochs_test, tEpochs_test])
+
+    tr_labels = epochs_train.events[:, -1]
+    te_labels = epochs_test.events[:, -1]
 
     scores = []
-    epochs_data = epochs.get_data()
     epochs_data_train = epochs_train.get_data()
-
-
+    epochs_data_test = epochs_test.get_data()
 
     cv = ShuffleSplit(10, test_size=0.2, random_state=42)
     #cv_split = cv.split(epochs_data_train) #Do I need cv split?
@@ -238,6 +283,14 @@ def CSP_LDA(type, filename=""):
     lda = LinearDiscriminantAnalysis()
     csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
 
+    csp.fit_transform(epochs_data_train, tr_labels)
+
     # Use scikit-learn Pipeline with cross_val_score function
     clf = Pipeline([('CSP', csp), ('LDA', lda)])
-    scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
+    scores = cross_val_score(clf, epochs_data_train, tr_labels, cv=cv, n_jobs=-1)
+
+    clf.fit(epochs_data_train, tr_labels)
+
+    print(scores)
+    print('train score:', clf.score(epochs_data_train, tr_labels))
+    print('test score:', clf.score(epochs_data_test, te_labels))
