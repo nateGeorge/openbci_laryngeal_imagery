@@ -16,8 +16,8 @@ from mne.decoding import CSP
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_data\fifs\\"
-PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_data\fifs\\"
+PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_data\data\fifs\\"
+PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_data\data\fifs\\"
 FILENAME1 = PATH1 + "BCIproject_trial-S5_raw.fif.gz"
 FILENAME2 = ""
 FILENAMES = [PATH1 + f for f in glob.glob(PATH1 + '*.raw.fif.gz')]
