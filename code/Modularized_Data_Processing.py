@@ -16,10 +16,10 @@ from mne.decoding import CSP
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_data\fifs\\"
+PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_data\data\fifs\\"
 PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_data\data\fifs\\"
 FILENAME1 = PATH1 + "BCIproject_trial-S5_raw.fif.gz"
-FILENAME2 = PATH1 + "BCIproject_trial-S4_raw.fif.gz"
+FILENAME2 = PATH1 + "BCIproject_trial-S3_raw.fif.gz"
 FILENAMES = [PATH1 + f for f in glob.glob(PATH1 + '*.raw.fif.gz')] #This file list doesn't return anything
 
 # make a class to hold information from get epochs
@@ -31,10 +31,10 @@ class dataHandler:
         self.ts = ts
 
 def load_data(filename=FILENAME1):
-    if filename=="":
+    if filename is None:
         root = Tk()
         root.withdraw()
-        filename = filedialog.askopenfilename(initialdir = "/",title = "Select mne data file",filetypes = (("mne files","*.fif.gz *.fif"),("all files","*.*")))
+        filename = filedialog.askopenfilename(initialdir = "PATH1",title = "Select mne data file",filetypes = (("mne files","*.fif.gz *.fif"),("all files","*.*")))
         return mne.io.read_raw_fif(filename, preload=True)
     else:
         return mne.io.read_raw_fif(filename, preload=True)
