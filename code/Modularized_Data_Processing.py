@@ -16,11 +16,12 @@ from mne.decoding import CSP
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_data\data\fifs\\"
-PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_data\data\fifs\\"
-FILENAME1 = PATH1 + "BCIproject_trial-S5_raw.fif.gz"
-FILENAME2 = PATH1 + "BCIproject_trial-S3_raw.fif.gz"
-FILENAMES = [PATH1 + f for f in glob.glob(PATH1 + '*raw.fif*.gz')] #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
+PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
+PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
+PATH = PATH2
+FILENAME1 = PATH + "BCIproject_trial-S5_raw.fif.gz"
+FILENAME2 = PATH + "BCIproject_trial-S3_raw.fif.gz"
+FILENAMES = [f for f in glob.glob(PATH + '*raw.fif*.gz')] #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
 
 
 # make a class to hold information from get epochs
