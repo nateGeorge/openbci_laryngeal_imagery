@@ -18,10 +18,12 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
 PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
-PATH = PATH2
+PATH = PATH1
 FILENAME1 = PATH + "BCIproject_trial-S5_raw.fif.gz"
 FILENAME2 = PATH + "BCIproject_trial-S3_raw.fif.gz"
-FILENAMES = [f for f in glob.glob(PATH + '*raw.fif*.gz')] #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
+S_FILES = [f for f in glob.glob(PATH + '*S*raw.fif.gz')]
+N_FILES = [f for f in glob.glob(PATH + '*N*raw.fif.gz')]
+FILENAMES = S_FILES #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
 
 
 # make a class to hold information from get epochs
@@ -44,6 +46,7 @@ def load_data(filename=FILENAME1):
 
 def load_many_data(filenames=FILENAMES):
     raw_data = []
+    i=0
 
     if filenames is None:
         # open tkinter dialogue
@@ -56,7 +59,8 @@ def load_many_data(filenames=FILENAMES):
 
         cur_raw = load_data(f)#current raw object
 
-        sfreqs = []
+
+        sfreqs = raw[i]['info']['sfreq']
 
         # if
 
