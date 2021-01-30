@@ -60,11 +60,13 @@ def load_many_data(filenames=FILENAMES):
         cur_raw = load_data(f)#current raw object
 
 
-        sfreqs = raw[i]['info']['sfreq']
+        # sfreqs = cur_raw[i]['info']['sfreq']
 
         # if
 
         raw_data.append(cur_raw)
+
+
 
     print("The length of raw_data is:" + str(len(raw_data)))
     # print("raw_data[0] is " + str(raw_data[0]))

@@ -10,7 +10,7 @@ import pandas as pd
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import matplotlib.pyplot as plt
 from scipy import signal
-from psychopy import visual, core, event
+from psychopy import visual, core, event, sound
 from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
 from psychopy import gui
@@ -31,10 +31,12 @@ class trialData:
         The duration of the trial data.
     Label : string
         A string corresponding to the type of data being recorded.
-        Could be one of:
-            S - ssvep
-            T - traditional motor imagery
-            L - laryngeal motor imagery
+            "Alpha" - for alpha wave detection
+            "S" - for SSVEP
+            "TMI-a" - for motor activity (actual)
+            "TMI-i" - for traditional motor imagery (imagined)
+            "LMI-a" - for laryngeal activity (actual)
+            "LMI-i" - for laryngeal motor imagery (imagined)
     """
     def __init__(self, onset, duration, description, label, flag=""):
         # self.startTime = startTime
@@ -63,10 +65,12 @@ class expData:
         A boolean to represent yes or no; True equals yes.
     label : str
         A string describing the type of trial.
-        Could be one of:
-            SSVEP - steady-state visually evoked potentials
-            TMI - tradition motor imagery
-            LMI - laryngeal motor imagery
+            "Alpha" - for alpha wave detection
+            "S" - for SSVEP
+            "TMI-a" - for motor activity (actual)
+            "TMI-i" - for traditional motor imagery (imagined)
+            "LMI-a" - for laryngeal activity (actual)
+            "LMI-i" - for laryngeal motor imagery (imagined)
     """
     def __init__(self):
         #create parameters required in the init function which record the following
@@ -232,12 +236,12 @@ def chkDur(window, data, iTrials, threshold=.1):
         int
             Returns 1 if the duration was between 4.9 seconds and 5 seconds long.
     """
-    if data.dataTrials[iTrials - 1].duration > 5 + threshold:
+    if data.dataTrials[iTrials].duration > 5 + threshold:
         status = "WARNING: The SSVEP was too long"
-        data.dataTrials[iTrials - 1].flag = "too long"
-        print(data.dataTrials[iTrials - 1].flag)
+        data.dataTrials[iTrials].flag = "too long"
+        print(data.dataTrials[iTrials].flag)
         return status
-    elif data.dataTrials[iTrials - 1].duration < 5 - threshold:
+    elif data.dataTrials[iTrials].duration < 5 - threshold:
         status = "WARNING: The SSVEP was too short"
         data.dataTrials.flag = "too short"
         print(data.dataTrials.flag)
@@ -254,14 +258,22 @@ def showMIinstructions(window, miType, holdTime):
     miType : string
         Type of motor imagery which needs to be prompted
         Could be one of:
-            t - Traditional
-            l - Laryngeal
+            m-i - motor imagery
+            l-i - laryngeal imagery
+            m-a - motor movement
+            l-a - laryngeal actuation
     """
-    if miType == 't':
+    if miType == 'm-i':
         responseInstr = ["imagine raising your right arm",
-                    "imagine raising your left arm"]
-    elif miType == 'l':
+                    "rest and wait"]
+    elif miType == 'l-i':
         responseInstr = ["imagine making a humming sound",
+                        "rest and wait"]
+    elif miType == 'm-a':
+        responseInstr = ["raise your right arm",
+                    "rest and wait"]
+    elif miType == 'l-a':
+        responseInstr = ["make a humming sound",
                         "rest and wait"]
 
     #present a prompt that asks the participant to think about raising their right arm for yes and left arm for no
@@ -290,18 +302,24 @@ def miPrompt(window, miType, holdTime):
     miType : string
         Type of motor imagery which needs to be prompted
         Could be one of:
-            t - Traditional
-            l - Laryngeal
+            m-i - motor imagery
+            l-i - laryngeal imagery
+            m-a - motor movement
+            l-a - laryngeal actuation
 
     Returns
     -------
     list of floats
         the times the TMI response started and time it ended
     """
-    if miType == 't':
-        text = "Imagine raising arm."
-    elif miType == 'l':
+    if miType == 'm-i':
+        text = "Imagine raising right arm."
+    elif miType == 'l-i':
         text = "Imagine making a noise, or rest."
+    elif miType == 'm-a':
+        text = "Raise right arm."
+    elif miType == 'l-a':
+        text = "Make a humming sound."
 
     tStim = visual.TextStim(window, text=text)
     tStim.draw()
@@ -347,7 +365,7 @@ def ssvepVideo(window, frequency_1=7, frequency_2=12):
 
     ssvep_right = visual.MovieStim3(window,
                             f'media/f{str(frequency_1)}Hz.avi',
-                            size=(dim, dim), 
+                            size=(dim, dim),
                             pos=[placement, 0])
     ssvep_left = visual.MovieStim3(window,
                             f'media/f{str(frequency_2)}Hz.avi',
@@ -400,24 +418,20 @@ def ssvepStim(window):
     return start, end
 
 
-def checkAns(window, yes_nos, iTrials):
+def checkAns(window, yes):
     """Checks to see if the correct answer was given to the primary stage of the experimental trial.
     Parameters
     ----------
     window : obj
         Psychopy window object.
-    yes_nos : array
-        Array of true's and false's corresponding to the correct answers to each trial; zero-indexed.
-    iTrials : int
-        Number corresponding to the current trial which needs to be checked.
+    yes : Boolean
+        T or F if response to stimulus should be yes or no
     Returns
     -------
     bool
         Returns True if the answer was correct and False if the answer was incorrect
     """
-    #set the correct answer to a variable called corAns
-    corAns = yes_nos[iTrials - 1]
-    thrAns = None
+    users_answer = None
 
     #present instructions for keypress responses: -> for yes and <- for no
 
@@ -427,21 +441,21 @@ def checkAns(window, yes_nos, iTrials):
         keys = getKeys()
 
         if 'right' in keys:
-            thrAns = True
+            users_answer = True
         if 'left' in keys:
-            thrAns = False
+            users_answer = False
 
         if 'q' and 'p' in keys:
             window.close()
             sys.exit(0)
 
-        if thrAns != None:
-            if thrAns == corAns:
+        if users_answer != None:
+            if users_answer == yes:
                 event.clearEvents()
                 return True
-            if thrAns != corAns:
-                event.clearEvents()
-                return False
+
+        event.clearEvents()
+        return False
 
 
 def makeYesnos(nYes, nNos):
@@ -461,64 +475,112 @@ def makeYesnos(nYes, nNos):
     return yes_nos
 
 
-def trialByType(window, yes_nos, type, iTrials, data):
+def eyes_closed(holdTime):
+    """
+    Parameters
+    ----------
+    holdTime : int or float
+        number of seconds to wait
+
+    Plays a sound, then waits for holdTime, then plays another sound.
+    Returns the start time and end time (floats) in seconds UTC since the epoch.
+    """
+    g = sound.Sound('G', 1)
+    g.play()
+    start = time.time()
+    time.sleep(holdTime)
+    g = sound.Sound('G', 1)
+    end = time.time()
+    g.play()
+    return start, end
+
+
+def trialByType(window, yes, type, holdTime=5):
     """Depending on the type argument given, runs the correct type of experimental trial.
 
     Parameters
     ----------
+    window : obj
+        Psychopy window object.
+    yes : boolean
+        True or false, whether the repsone/stimulus should be yes or no (T or F)
     type : string
         What type of experimental trial is this
         Could be one of:
+            "Alpha" - for alpha wave detection
             "S" - for SSVEP
-            "TMI" - for traditional motor imagery
-            "LMI" - for laryngeal motor imagery
-    window : obj
-        Psychopy window object.
+            "TMI-a" - for motor activity (actual)
+            "TMI-i" - for traditional motor imagery (imagined)
+            "LMI-a" - for laryngeal activity (actual)
+            "LMI-i" - for laryngeal motor imagery (imagined)
+
     iTrials : int
         Current trial number.
+    holdTime : float or int
+        Number of seconds for the time the stimulus is shown.
+
     Notes
     -------
         Press q and p during the trial to exit
     """
-    holdTime = 5  # seconds for MI
     elephantStim = visual.ImageStim(win=window,
                                 pos=((0, 0.25)),
                                 image=EL_IMG,
                                 mask=EL_MASK,
                                 size=0.4)
-    #show trial number
+    # for debug
     if type == "S":
         fulType = "SSVEP"
-    if type == "TMI":
+    elif type == "TMI-a":
+        fulType = "Actual Motor Movement"
+    elif type == "LMI-i":
+        fulType = "Laryngeal Motor Imagery"
+    elif type == "TMI-i":
         fulType = "Traditional Motor Imagery"
-    if type == "LMI":
+    elif type == "LMI-i":
         fulType = "Laryngeal Motor Imagery"
 
-    window.flip()
     text = f'{fulType} Trial #{str(iTrials)}: Is the Elephant in the box?'
+
+    window.flip()
     trialNumStim = visual.TextStim(win=window,
                                 text=text,
                                 pos=(-.3, .8))
     trialNumStim.draw()
 
+
+    if type == "alpha":
+        text = f"""Close your eyes for {holdTime} seconds when you hear the sound,
+        then open them when you hear the sound again."""
+        textstim = visual.TextStim(win=window,
+                                    text=text,
+                                    pos=(-0.5, 0),
+                                    wrapWidth=0.5)
+
+        textstim.draw()
+        time.sleep(1.5)
+        start, end = eyes_closed()
+        return start, end
+
+
     if type == "S":
         #present the stimulus
-        if yes_nos[iTrials-1] == True:
+        if yes:
             boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
-        elif yes_nos[iTrials-1] == False:
+        else:
             boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
         window.flip()
-        check = checkAns(window, yes_nos, iTrials)
+        check = checkAns(window, yes)
 
         if check == True:
             window.flip()
             ssvepStart, ssvepStop = ssvepStim(window)
             data.trials = trialData(ssvepStart,
                                     ssvepStop - ssvepStart,
-                                    yes_nos[iTrials - 1],
+                                    yes,
                                     "SSVEP")
             window.flip()
         else:
@@ -529,28 +591,29 @@ def trialByType(window, yes_nos, type, iTrials, data):
             time.sleep(2)
             window.flip()
             event.clearEvents()
-            ssvepStart, ssvepStop = trialByType(window, yes_nos, "S", iTrials, data)
+            ssvepStart, ssvepStop = trialByType(window, yes, "S")
 
         return ssvepStart, ssvepStop
 
-    if type == "TMI":
+
+    if type == "TMI-a":
         #present the stimulus
-        if yes_nos[iTrials-1] == True:
+        if yes:
             boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
-        elif yes_nos[iTrials-1] == False:
+        else:
             boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
 
-        showMIinstructions(window, 't', holdTime)
+        showMIinstructions(window, 'm-a', holdTime)
 
         window.flip()
-        check = checkAns(window, yes_nos, iTrials)
+        check = checkAns(window, yes)
 
         if check == True:
             window.flip()
-            tmiStart, tmiStop = miPrompt(window, "t", holdTime)
+            tmiStart, tmiStop = miPrompt(window, "m-a", holdTime)
             window.flip()
         else:
             retryText = "Please enter the correct answer before continuing"
@@ -560,29 +623,30 @@ def trialByType(window, yes_nos, type, iTrials, data):
             time.sleep(2)
             window.flip()
             event.clearEvents()
-            tmiStart, tmiStop = trialByType(window, yes_nos, "TMI", iTrials, data)
+            tmiStart, tmiStop = trialByType(window, yes, "TMI-a")
             window.flip()
 
         return tmiStart, tmiStop
 
-    if type == "LMI":
+
+    if type == "TMI-i":
         #present the stimulus
-        if yes_nos[iTrials-1] == True:
+        if yes:
             boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
-        if yes_nos[iTrials-1] == False:
+        else:
             boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
 
         elephantStim.draw()
         boxStim.draw()
 
-        showMIinstructions(window, 'l', holdTime)
+        showMIinstructions(window, "m-a", holdTime)
 
         window.flip()
-        check = checkAns(window, yes_nos, iTrials)
+        check = checkAns(window, yes)
 
         if check == True:
             window.flip()
-            lmiStart, lmiStop = miPrompt(window, "l", holdTime)
+            tmiStart, tmiStop = miPrompt(window, "m-i", holdTime)
             window.flip()
         else:
             retryText = "Please enter the correct answer before continuing"
@@ -592,7 +656,73 @@ def trialByType(window, yes_nos, type, iTrials, data):
             time.sleep(2)
             window.flip()
             event.clearEvents()
-            lmiStart, lmiStop = trialByType(window, yes_nos, "LMI", iTrials, data)
+            tmiStart, tmiStop = trialByType(window, yes, "TMI-i")
+            window.flip()
+
+        return tmiStart, tmiStop
+
+
+    if type == "LMI-a":
+        #present the stimulus
+        if yes:
+            boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
+        else:
+            boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
+
+        elephantStim.draw()
+        boxStim.draw()
+
+        showMIinstructions(window, "l-a", holdTime)
+
+        window.flip()
+        check = checkAns(window, yes)
+
+        if check == True:
+            window.flip()
+            lmiStart, lmiStop = miPrompt(window, "l-a", holdTime)
+            window.flip()
+        else:
+            retryText = "Please enter the correct answer before continuing"
+            retryStim = visual.TextStim(win=window, text=retryText, color="red")
+            retryStim.draw()
+            window.flip()
+            time.sleep(2)
+            window.flip()
+            event.clearEvents()
+            lmiStart, lmiStop = trialByType(window, yes, "LMI-a")
+            window.flip()
+
+        return lmiStart, lmiStop
+
+
+    if type == "LMI-i":
+        #present the stimulus
+        if yes:
+            boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
+        else:
+            boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
+
+        elephantStim.draw()
+        boxStim.draw()
+
+        showMIinstructions(window, "l-i", holdTime,)
+
+        window.flip()
+        check = checkAns(window, yes)
+
+        if check == True:
+            window.flip()
+            lmiStart, lmiStop = miPrompt(window, "l-i", holdTime)
+            window.flip()
+        else:
+            retryText = "Please enter the correct answer before continuing"
+            retryStim = visual.TextStim(win=window, text=retryText, color="red")
+            retryStim.draw()
+            window.flip()
+            time.sleep(2)
+            window.flip()
+            event.clearEvents()
+            lmiStart, lmiStop = trialByType(window, yes, "LMI-i")
             window.flip()
 
         return lmiStart, lmiStop
@@ -643,21 +773,37 @@ def getKeypress(window):
         return None
 
 
-def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data, debug=False):
+def trials(window,
+            nAlphaTrials,
+            nSsvepTrials,
+            nMiTrials_a,
+            nMiTrials_i,
+            nLmiTrials_a,
+            nLmiTrials_i,
+            data,
+            debug=False):
     """Runs the experimental protocol for the trial section of the experiment.
 
     Parameters
     ----------
     window : obj
         Psychopy window object.
+    nAlphaTrials : int
+        The number of alpha wave (eyes closed) trials to repeat.
     nSsvepTrials : int
         The number of SSVEP trials to repeat.
             * MUST BE EVEN
-    nMiTrials : int
-        The number of traditional MI trials to repeat.
+    nMiTrials_a : int
+        The number of motor movement trials to repeat.
             * MUST BE EVEN
-    nLmiTrials : int
-        The number of laryngeal MI trials to repeat.
+    nMiTrials_i : int
+        The number of traditional motor imagery trials to repeat.
+            * MUST BE EVEN
+    nLmiTrials_a : int
+        The number of laryngeal engagement trials to repeat.
+            * MUST BE EVEN
+    nLmiTrials_i : int
+        The number of laryngeal motor imagery trials to repeat.
             * MUST BE EVEN
     data : obj
         This is the expData class object which will hold the important
@@ -665,21 +811,35 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data, debug=False):
     debug : bool
         True for printing debug statements.
     """
+    text = f"""
+    In the first part of the experiment, you should close your eyes when you hear the first sound.
+    When you hear the sound again, open your eyes. This will repeat {nAlphaTrials} times.
+    """
+    text_Stim = visual.TextStim(win=window, text=text)
+    text_Stim.draw()
+    waitForArrow(window)
+
+    for i in range(nAlphaTrials):
+        start, stop = trialByType(window, yes=True, type='alpha')
+        data.addTrial(start, (stop - start), True, 'alpha')
+
+
     yes_nos =  makeYesnos(nSsvepTrials//2, nSsvepTrials//2) + \
                 makeYesnos(nMiTrials//2, nMiTrials//2) + \
                 makeYesnos(nLmiTrials//2, nLmiTrials//2)
-    iTrials = 1  # the current trial number intialized to 1
+    iTrials = 0  # the current trial number intialized to 1
 
     # repeat the number of ssvep trials
-    while iTrials <= nSsvepTrials:
-        start, stop = trialByType(window, yes_nos, "S", iTrials, data)
-        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "SSVEP")
+    for iTrial in range(nSsvepTrials):
+        yes = yes_nos[iTrial]
+        start, stop = trialByType(window, yes, "S")
+        data.addTrial(start, (stop - start), yes, "SSVEP")
 
         if debug:
-            print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
-            print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
-            print("description is: " + str(data.dataTrials[iTrials - 1].description))
-            print("label is: " + str(data.dataTrials[iTrials - 1].label))
+            print("onset is: " + str(data.dataTrials[iTrials].onset))
+            print("duration is: " + str(data.dataTrials[iTrials].duration))
+            print("description is: " + str(data.dataTrials[iTrials].description))
+            print("label is: " + str(data.dataTrials[iTrials].label))
 
         slowSsvepTxt = chkDur(window, data, iTrials)
 
@@ -688,8 +848,30 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data, debug=False):
             slowSsvepStim.draw()
             window.flip()
             time.sleep(2)
-        
-        iTrials = iTrials + 1
+
+        iTrials += 1
+
+    text = """
+    We will now move to motor activity.
+    The same stimuli will be presented.
+    If the elephant is in the box, press the right arrow key
+    and lift up your right arm until 'done' displays.
+    """
+    text_Stim = visual.TextStim(win=window, text=text)
+    text_Stim.draw()
+    waitForArrow(window)
+
+    # repeat the number of traditional motor activity trials
+    for iTrial in range(nMiTrials_a):
+        yes = yes_nos[iTrial]
+        start, stop = trialByType(window, yes, "TMI-a")
+        data.addTrial(start, (stop - start), yes, "TMI-a")
+        if debug:
+            print("onset is: " + str(data.dataTrials[iTrials].onset))
+            print("duration is: " + str(data.dataTrials[iTrials].duration))
+            print("description is: " + str(data.dataTrials[iTrials].description))
+            print("label is: " + str(data.dataTrials[iTrials].label))
+        iTrials += 1
 
     text = """
     We will now move to motor imagery.
@@ -702,14 +884,38 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data, debug=False):
     waitForArrow(window)
 
     # repeat the number of traditional MI trials
-    while iTrials <= nSsvepTrials + nMiTrials:
-        start, stop = trialByType(window, yes_nos, "TMI", iTrials, data)
-        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "TMI")
+    for iTrial in range(nMiTrials_i):
+        yes = yes_nos[iTrial]
+        start, stop = trialByType(window, yes, "TMI-i")
+        data.addTrial(start, (stop - start), yes, "TMI-i")
         if debug:
-            print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
-            print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
-            print("description is: " + str(data.dataTrials[iTrials - 1].description))
-            print("label is: " + str(data.dataTrials[iTrials - 1].label))
+            print("onset is: " + str(data.dataTrials[iTrials].onset))
+            print("duration is: " + str(data.dataTrials[iTrials].duration))
+            print("description is: " + str(data.dataTrials[iTrials].description))
+            print("label is: " + str(data.dataTrials[iTrials].label))
+        iTrials += 1
+
+    text = """
+    We will now move to larnygeal activity.
+    The same stimuli will be presented.
+    If the elephant is in the box, press the right arrow key
+    and imagine make an actual humming sound until 'done' displays.
+    If the elephant is not in the box, simply rest.
+    """
+    text_Stim = visual.TextStim(win=window, text=text)
+    text_Stim.draw()
+    waitForArrow(window)
+
+    # repeat the number of laryngeal activity trials
+    for iTrial in range(nLmiTrials_a):
+        yes = yes_nos[iTrial]
+        start, stop = trialByType(window, yes, "LMI-a")
+        data.addTrial(start, (stop - start), yes, "LMI-a")
+        if debug:
+            print("onset is: " + str(data.dataTrials[iTrials].onset))
+            print("duration is: " + str(data.dataTrials[iTrials].duration))
+            print("description is: " + str(data.dataTrials[iTrials].description))
+            print("label is: " + str(data.dataTrials[iTrials].label))
         iTrials = iTrials + 1
 
     text = """
@@ -717,21 +923,22 @@ def trials(window, nSsvepTrials, nMiTrials, nLmiTrials, data, debug=False):
     The same stimuli will be presented.
     If the elephant is in the box, press the right arrow key
     and imagine making a humming sound until 'done' displays.
-    If the elephant is not in the box, simply wait.
+    If the elephant is not in the box, simply rest.
     """
     text_Stim = visual.TextStim(win=window, text=text)
     text_Stim.draw()
     waitForArrow(window)
 
     # repeat the number of laryngeal MI trials
-    while iTrials <= nSsvepTrials + nMiTrials + nLmiTrials:
-        start, stop = trialByType(window, yes_nos, "LMI", iTrials, data)
-        data.addTrial(start, (stop - start), yes_nos[iTrials - 1], "LMI")
+    for iTrial in range(nLmiTrials_i):
+        yes = yes_nos[iTrial]
+        start, stop = trialByType(window, yes, "LMI-i")
+        data.addTrial(start, (stop - start), yes, "LMI-i")
         if debug:
-            print("onset is: " + str(data.dataTrials[iTrials - 1].onset))
-            print("duration is: " + str(data.dataTrials[iTrials - 1].duration))
-            print("description is: " + str(data.dataTrials[iTrials - 1].description))
-            print("label is: " + str(data.dataTrials[iTrials - 1].label))
+            print("onset is: " + str(data.dataTrials[iTrials].onset))
+            print("duration is: " + str(data.dataTrials[iTrials].duration))
+            print("description is: " + str(data.dataTrials[iTrials].description))
+            print("label is: " + str(data.dataTrials[iTrials].label))
         iTrials = iTrials + 1
 
 
@@ -761,7 +968,7 @@ def example(window):
 
     exText3 = "this"
     exText3_Stim = visual.TextStim(win=window, text=exText3, pos=(0, .7))
-    exText3_Stim.draw()    
+    exText3_Stim.draw()
 
     boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
     boxStim.draw()
@@ -780,7 +987,7 @@ def example(window):
     boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
     boxStim.draw()
     elephantStim.draw()
-    
+
     corAns = "NO"
     corAns_Stim = visual.TextStim(win=window, text=corAns, pos=(0, -0.7))
     corAns_Stim.draw()
@@ -802,12 +1009,11 @@ def instructions(window):
     The elephant will either be inside of a box or not.
     """
     instrctsTxt_2 = """You will then be asked: 'Was the elephant
-    in the box?' Please click the right arrow (->) to respond yes
-    or the left arrow (<-) to respond no.
+    in the box?' Please click the right arrow (→) to respond yes
+    or the left arrow (←) to respond no.
     """
     instrctsTxt_3 = """Only after you have responded correctly will
-    you respond again by looking at the flashing light on the right
-    to respond yes, or the flashing light on the left to respond no.
+    you respond again by following the instructions for indicating yes or no.
     """
     instrct_stim = visual.TextStim(window, text=instrctsTxt_1)
     instrct_stim.draw()
@@ -873,10 +1079,10 @@ def run_experiment(debug=False):
         window = visual.Window()
     else:
         window = visual.Window(fullscr=True)
-    
+
     instructions(window)
     example(window)
-    trials(window, 0, 2, 2, data, debug=debug)
+    trials(window, 2, 2, 2, 2, 2, 2, data, debug=debug)
     window.close()
     data.stopBCI()
 
