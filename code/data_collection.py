@@ -453,9 +453,9 @@ def checkAns(window, yes):
             if users_answer == yes:
                 event.clearEvents()
                 return True
-
-        event.clearEvents()
-        return False
+            else:
+                event.clearEvents()
+                return False
 
 
 def makeYesnos(nYes, nNos):
@@ -514,8 +514,6 @@ def trialByType(window, yes, type, holdTime=5):
             "LMI-a" - for laryngeal activity (actual)
             "LMI-i" - for laryngeal motor imagery (imagined)
 
-    iTrials : int
-        Current trial number.
     holdTime : float or int
         Number of seconds for the time the stimulus is shown.
 
@@ -540,28 +538,20 @@ def trialByType(window, yes, type, holdTime=5):
     elif type == "LMI-i":
         fulType = "Laryngeal Motor Imagery"
 
-    text = f'{fulType} Trial #{str(iTrials)}: Is the Elephant in the box?'
+
+    if type == "alpha":
+        start, end = eyes_closed(holdTime)
+        return start, end
+
+
+    text = f'Is the Elephant in the box?'
 
     window.flip()
     trialNumStim = visual.TextStim(win=window,
                                 text=text,
                                 pos=(-.3, .8))
     trialNumStim.draw()
-
-
-    if type == "alpha":
-        text = f"""Close your eyes for {holdTime} seconds when you hear the sound,
-        then open them when you hear the sound again."""
-        textstim = visual.TextStim(win=window,
-                                    text=text,
-                                    pos=(-0.5, 0),
-                                    wrapWidth=0.5)
-
-        textstim.draw()
-        time.sleep(1.5)
-        start, end = eyes_closed()
-        return start, end
-
+    
 
     if type == "S":
         #present the stimulus
@@ -578,11 +568,8 @@ def trialByType(window, yes, type, holdTime=5):
         if check == True:
             window.flip()
             ssvepStart, ssvepStop = ssvepStim(window)
-            data.trials = trialData(ssvepStart,
-                                    ssvepStop - ssvepStart,
-                                    yes,
-                                    "SSVEP")
             window.flip()
+            return ssvepStart, ssvepStop
         else:
             retryText = "Please enter the correct answer before continuing"
             retryStim = visual.TextStim(win=window, text=retryText, color="red")
@@ -592,8 +579,6 @@ def trialByType(window, yes, type, holdTime=5):
             window.flip()
             event.clearEvents()
             ssvepStart, ssvepStop = trialByType(window, yes, "S")
-
-        return ssvepStart, ssvepStop
 
 
     if type == "TMI-a":
@@ -639,7 +624,7 @@ def trialByType(window, yes, type, holdTime=5):
         elephantStim.draw()
         boxStim.draw()
 
-        showMIinstructions(window, "m-a", holdTime)
+        showMIinstructions(window, "m-i", holdTime)
 
         window.flip()
         check = checkAns(window, yes)
@@ -781,6 +766,7 @@ def trials(window,
             nLmiTrials_a,
             nLmiTrials_i,
             data,
+            holdTime=5,
             debug=False):
     """Runs the experimental protocol for the trial section of the experiment.
 
@@ -808,6 +794,8 @@ def trials(window,
     data : obj
         This is the expData class object which will hold the important
         data for the experiment.
+    holdTime : int or float
+        time to collect data for each exp
     debug : bool
         True for printing debug statements.
     """
@@ -820,13 +808,23 @@ def trials(window,
     waitForArrow(window)
 
     for i in range(nAlphaTrials):
+        text = f"""Close your eyes for {holdTime} seconds when you hear the sound,
+        then open them when you hear the sound again."""
+        textstim = visual.TextStim(win=window,
+                                    text=text)
+
+        textstim.draw()
+        window.flip()
+        time.sleep(2)
         start, stop = trialByType(window, yes=True, type='alpha')
         data.addTrial(start, (stop - start), True, 'alpha')
 
 
     yes_nos =  makeYesnos(nSsvepTrials//2, nSsvepTrials//2) + \
-                makeYesnos(nMiTrials//2, nMiTrials//2) + \
-                makeYesnos(nLmiTrials//2, nLmiTrials//2)
+                makeYesnos(nMiTrials_a//2, nMiTrials_a//2) + \
+                makeYesnos(nLmiTrials_a//2, nLmiTrials_a//2) + \
+                makeYesnos(nMiTrials_i//2, nMiTrials_i//2) + \
+                makeYesnos(nLmiTrials_i//2, nLmiTrials_i//2)
     iTrials = 0  # the current trial number intialized to 1
 
     # repeat the number of ssvep trials
@@ -1026,7 +1024,7 @@ def instructions(window):
     waitForArrow(window)
 
 
-def run_experiment(debug=False):
+def run_experiment(debug=True):
     """
     Runs experiment for data collection.
 
