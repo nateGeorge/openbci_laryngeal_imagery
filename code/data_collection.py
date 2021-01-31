@@ -187,6 +187,23 @@ class expData:
                                 14: 'T4',
                                 15: 'PO3',
                                 16: 'PO4'}
+        elif sensor_locations == 'LMI2':
+            number_to_1020 = {1: 'Fp1',
+                                2: 'Fp2',
+                                3: 'CP1',
+                                4: 'CP2',
+                                5: 'FC1', #change to FC1
+                                6: 'FC2', #change to FC2
+                                7: 'O1',
+                                8: 'O2',
+                                9: 'F7',
+                                10: 'F8',
+                                11: 'Fz',
+                                12: 'Cz',
+                                13: 'T3',
+                                14: 'T4',
+                                15: 'P3',
+                                16: 'P4'}
 
         ch_types = ['eeg'] * 16
         ch_names = list(number_to_1020.values())
@@ -551,7 +568,7 @@ def trialByType(window, yes, type, holdTime=5):
                                 text=text,
                                 pos=(-.3, .8))
     trialNumStim.draw()
-    
+
 
     if type == "S":
         #present the stimulus
@@ -818,7 +835,7 @@ def trials(window,
         time.sleep(2)
         start, stop = trialByType(window, yes=True, type='alpha')
         data.addTrial(start, (stop - start), True, 'alpha')
-    
+
     time.sleep(2)
 
 
@@ -1092,6 +1109,7 @@ def run_experiment(debug=True):
         window = visual.Window()
     else:
         window = visual.Window(fullscr=True)
+
 
     instructions(window)
     example(window)
