@@ -206,7 +206,7 @@ def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
     idxs = list(range(len(f1.specs)))
     train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
     test_idxs = list(set(idxs).difference(set(train_idxs)))
-    test_idxs = list(set(idxs).difference(set(test_idxs))) # TODO: Should this be changed to test_idxs????
+    test_idxs = list(set(idxs).difference(set(test_idxs)))
     train_f1s = np.concatenate([f1.specs[i] for i in train_idxs], axis=1)
     train_f2s = np.concatenate([f2.specs[i] for i in train_idxs], axis=1)
     test_f1s = np.concatenate([f1.specs[i] for i in test_idxs], axis=1)
