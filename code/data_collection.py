@@ -818,6 +818,8 @@ def trials(window,
         time.sleep(2)
         start, stop = trialByType(window, yes=True, type='alpha')
         data.addTrial(start, (stop - start), True, 'alpha')
+    
+    time.sleep(2)
 
 
     yes_nos =  makeYesnos(nSsvepTrials//2, nSsvepTrials//2) + \
@@ -826,6 +828,19 @@ def trials(window,
                 makeYesnos(nMiTrials_i//2, nMiTrials_i//2) + \
                 makeYesnos(nLmiTrials_i//2, nLmiTrials_i//2)
     iTrials = 0  # the current trial number intialized to 1
+
+
+    text = """
+    We will now move to SSVEP.
+    The elephant stimuli will be presented.
+    If the elephant is in the box, press the right arrow key
+    and look at the flashing box on the right.
+    If the elephant is out of the box, press the left arrow key,
+    then look at the flashing box on the left.
+    """
+    text_Stim = visual.TextStim(win=window, text=text)
+    text_Stim.draw()
+    waitForArrow(window)
 
     # repeat the number of ssvep trials
     for iTrial in range(nSsvepTrials):
