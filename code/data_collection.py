@@ -116,7 +116,7 @@ class expData:
         # cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
         # bluetooth is 2
         if brd == "WiFi":
-            params.ip_address = '10.0.0.220'
+            params.ip_address = '10.0.0.220' #Here I tried using a different IP of 192.168.4.1 (the IP for the WiFi Access Point) and it didn't fix the problem
             params.ip_port = 6227
             board = BoardShim(6, params)
             self.sfreq = 1000
