@@ -1,5 +1,4 @@
 .vscode
-data/*
 *.fif.gz
 *.pk
 
