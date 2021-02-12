@@ -117,6 +117,7 @@ class expData:
         # bluetooth is 2
         if brd == "WiFi":
             params.ip_address = '192.168.4.1'#'10.0.0.220'
+            params.ip_port = 6229
             board = BoardShim(6, params)
             self.sfreq = 1000
         elif brd == "Synthetic":
@@ -135,7 +136,7 @@ class expData:
         time.sleep(3)
         self.board = board
 
-    def stopBCI(self, sensor_locations='LMI1'):
+    def stopBCI(self, sensor_locations='LMI2'):
         """Stops the openBCI datastream and disconnects the headset
 
             Parameters
@@ -329,13 +330,13 @@ def miPrompt(window, miType, holdTime):
         the times the TMI response started and time it ended
     """
     if miType == 'm-i':
-        text = "Imagine raising right arm."
+        text = "Imagine raising right arm or rest."
     elif miType == 'l-i':
-        text = "Imagine making a noise, or rest."
+        text = "Imagine making a noise or rest."
     elif miType == 'm-a':
-        text = "Raise right arm."
+        text = "Raise right arm or rest."
     elif miType == 'l-a':
-        text = "Make a humming sound."
+        text = "Make a humming sound or rest."
 
     tStim = visual.TextStim(window, text=text)
     tStim.draw()
@@ -501,7 +502,7 @@ def eyes_closed(holdTime):
     Plays a sound, then waits for holdTime, then plays another sound.
     Returns the start time and end time (floats) in seconds UTC since the epoch.
     """
-    g = sound.Sound('G', 1)
+    g = sound.Sound('C', 1)
     g.play()
     start = time.time()
     time.sleep(holdTime)
@@ -816,8 +817,8 @@ def trials(window,
         True for printing debug statements.
     """
     text = f"""
-    In the first part of the experiment, you should close your eyes when you hear the first sound.
-    When you hear the sound again, open your eyes. This will repeat {nAlphaTrials} times.
+    In the first part of the experiment, you should close your eyes when you hear the first low-pitched sound.
+    When you hear the higher-pitched sound, open your eyes. This will repeat {nAlphaTrials} times.
     """
     text_Stim = visual.TextStim(win=window, text=text)
     text_Stim.draw()
@@ -831,7 +832,7 @@ def trials(window,
 
         textstim.draw()
         window.flip()
-        time.sleep(2)
+        time.sleep(holdTime)
         start, stop = trialByType(window, yes=True, type='alpha')
         data.addTrial(start, (stop - start), True, 'alpha')
 
@@ -928,7 +929,7 @@ def trials(window,
     We will now move to larnygeal activity.
     The same stimuli will be presented.
     If the elephant is in the box, press the right arrow key
-    and imagine make an actual humming sound until 'done' displays.
+    and make an actual humming sound until 'done' displays.
     If the elephant is not in the box, simply rest.
     """
     text_Stim = visual.TextStim(win=window, text=text)
@@ -1112,11 +1113,12 @@ def run_experiment(debug=True):
 
     instructions(window)
     example(window)
-    trials(window, 2, 2, 2, 2, 2, 2, data, debug=debug)
+    n_trials = 10
+    trials(window, n_trials, n_trials, n_trials, n_trials, n_trials, n_trials, data, debug=debug)
     window.close()
     data.stopBCI()
 
 
 if __name__ == '__main__':
-    run_experiment()
+    run_experiment(debug=False)
     core.quit()
