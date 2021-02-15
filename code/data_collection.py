@@ -116,8 +116,15 @@ class expData:
         # cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
         # bluetooth is 2
         if brd == "WiFi":
+<<<<<<< HEAD
+            params.ip_address = '192.168.4.1' #'10.0.0.220'
+=======
             params.ip_address = '192.168.4.1'#'10.0.0.220'
             params.ip_port = 6229
+<<<<<<< Updated upstream
+=======
+>>>>>>> 533400e01137672d993a8ee9628d1884491a27cd
+>>>>>>> Stashed changes
             board = BoardShim(6, params)
             self.sfreq = 1000
         elif brd == "Synthetic":
