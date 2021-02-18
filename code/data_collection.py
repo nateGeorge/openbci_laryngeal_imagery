@@ -825,16 +825,19 @@ def trials(window,
     waitForArrow(window)
 
     for i in range(nAlphaTrials):
-        text = f"""Close your eyes for {holdTime} seconds when you hear the sound,
-        then open them when you hear the sound again."""
+        text = f"""Close your eyes for {holdTime} seconds when you hear the low-pitched sound,
+        then open them when you hear the high-pitched sound."""
         textstim = visual.TextStim(win=window,
                                     text=text)
 
         textstim.draw()
         window.flip()
+        eyes_open_start = time.time()
         time.sleep(holdTime)
+        eyes_open_stop = time.time()
         start, stop = trialByType(window, yes=True, type='alpha')
         data.addTrial(start, (stop - start), True, 'alpha')
+        data.addTrial(eyes_open_start, (eyes_open_stop - eyes_open_start), False, 'alpha')
 
     time.sleep(2)
 
