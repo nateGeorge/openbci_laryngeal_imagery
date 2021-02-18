@@ -78,11 +78,12 @@ def load_many_data(filenames=FILENAMES):
 
 
 def get_epochs(type,
+                orig_data=None,
                 filename=FILENAME1,
                 bandpass_range=(5, 50),
                 channels=["O1", "O2", "P3", "P4"],
-                nperseg=125,
-                noverlap=115):
+                nperseg=1000,
+                noverlap=800):
     """Get epochs of eeg data and creates spectograms.
     Parameters
     ----------
@@ -101,7 +102,10 @@ def get_epochs(type,
         spectrogram calcuations. Increase for more time datapoints in spectrogram.
         Cannot be greater than nperseg - 1.
     """
-    data = load_data(filename)
+    if orig_data is None:
+        data = load_data(filename)
+    else:
+        data = orig_data.copy()
 
     # removed first 2 seconds of data
     data = data.crop(2)
@@ -126,7 +130,7 @@ def get_epochs(type,
         for i in range(chnData.shape[0]):
             # frequency, time, intensity (shape fxt)
             f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
-                                                fs=125,
+                                                fs=int(data.info['sfreq']),
                                                 nperseg=nperseg,
                                                 noverlap=noverlap)
             specs.append(c_spec)
@@ -149,7 +153,7 @@ def get_epochs(type,
         for i in range(chnData.shape[0]):
             # frequency, time, intensity (shape fxt)
             f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
-                                                fs=125,
+                                                fs=data.info['sfreq'],
                                                 nperseg=nperseg,
                                                 noverlap=noverlap)
             specs.append(c_spec)
@@ -164,7 +168,7 @@ def get_epochs(type,
     return f1, f2
 
 
-def plot_spectrogram(ts, fs, spec, savefig=False, filename=None):
+def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
         """Plots a spectrogram of FFT.
         Parameters
         ----------
@@ -179,11 +183,11 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None):
         filename : str
             File name of the saved image.
         """
-        f = plt.figure(figsize=(12, 12))
+        f = plt.figure(figsize=(5, 5))
         plt.pcolormesh(ts, fs, spec, shading='gouraud')
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')
-        plt.ylim([5, 50])
+        plt.ylim(ylim)
         plt.colorbar()
         plt.tight_layout()
         plt.show()
@@ -192,6 +196,7 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None):
                 filename = 'saved_plot.png'
 
             plt.savefig(filename)
+
 
 def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
     """Uses data from get_epochs() in f1 and f2 to create a list of features and targets.
