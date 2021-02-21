@@ -140,56 +140,55 @@ def get_epochs(type,
         picks = mne.pick_types(data.info, eeg=True)
         f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
+        f1_specs = []
+        f1_fs = []
+        f1_ts = []
+
+        for x in range(len(f1_epochs)):
+            specs = []
+            chnData = f1_epochs[x].pick_channels(channels).get_data()[0]
+            for i in range(chnData.shape[0]):
+                # frequency, time, intensity (shape fxt)
+                f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
+                                                    fs=int(data.info['sfreq']),
+                                                    nperseg=nperseg,
+                                                    noverlap=noverlap)
+                specs.append(c_spec)
+
+            f1_spec = np.mean(np.array(specs), axis=0)
+            f1_specs.append(f1_spec)
+            f1_fs.append(f1_f)
+            f1_ts.append(f1_t)
+
+        f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
+
     if true_found:
         events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
         picks = mne.pick_types(data.info, eeg=True)
         f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) # Should these values be changed to tmin=1, tmin=4
 
 
-    f1_specs = []
-    f1_fs = []
-    f1_ts = []
+        f2_specs = []
+        f2_fs = []
+        f2_ts = []
 
-    for x in range(len(f1_epochs)):
-        specs = []
-        chnData = f1_epochs[x].pick_channels(channels).get_data()[0]
-        for i in range(chnData.shape[0]):
-            # frequency, time, intensity (shape fxt)
-            f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
-                                                fs=int(data.info['sfreq']),
-                                                nperseg=nperseg,
-                                                noverlap=noverlap)
-            specs.append(c_spec)
+        for x in range(len(f1_epochs)):
+            specs = []
+            chnData = f2_epochs[x].pick_channels(channels).get_data()[0]
+            for i in range(chnData.shape[0]):
+                # frequency, time, intensity (shape fxt)
+                f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
+                                                    fs=data.info['sfreq'],
+                                                    nperseg=nperseg,
+                                                    noverlap=noverlap)
+                specs.append(c_spec)
 
-        f1_spec = np.mean(np.array(specs), axis=0)
-        f1_specs.append(f1_spec)
-        f1_fs.append(f1_f)
-        f1_ts.append(f1_t)
+            f2_spec = np.mean(np.array(specs), axis=0)
+            f2_specs.append(f2_spec)
+            f2_fs.append(f2_f)
+            f2_ts.append(f2_t)
 
-    f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
-
-
-    f2_specs = []
-    f2_fs = []
-    f2_ts = []
-
-    for x in range(len(f1_epochs)):
-        specs = []
-        chnData = f2_epochs[x].pick_channels(channels).get_data()[0]
-        for i in range(chnData.shape[0]):
-            # frequency, time, intensity (shape fxt)
-            f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
-                                                fs=data.info['sfreq'],
-                                                nperseg=nperseg,
-                                                noverlap=noverlap)
-            specs.append(c_spec)
-
-        f2_spec = np.mean(np.array(specs), axis=0)
-        f2_specs.append(f2_spec)
-        f2_fs.append(f2_f)
-        f2_ts.append(f2_t)
-
-    f2 = dataHandler(f2_specs, f2_fs, f2_ts)
+        f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
     return f1, f2
 
