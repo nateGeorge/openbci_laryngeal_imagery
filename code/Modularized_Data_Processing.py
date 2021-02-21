@@ -191,7 +191,7 @@ def get_epochs(type,
         f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
     if false_found:
-        if !true_found:
+        if not true_found:
             return f1, None
         if true_found:
             return f1, f2
