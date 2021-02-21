@@ -21,9 +21,10 @@ PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
 PATH = PATH1
 FILENAME1 = PATH + "BCIproject_trial-S5_raw.fif.gz"
 FILENAME2 = PATH + "BCIproject_trial-S3_raw.fif.gz"
+FILENAME3 = PATH + "BCIproject_trial-1.2-11-2021_raw.fif.gz"
 S_FILES = [f for f in glob.glob(PATH + '*S*raw.fif.gz')]
 N_FILES = [f for f in glob.glob(PATH + '*N*raw.fif.gz')]
-FILENAMES = S_FILES #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
+FILENAMES = N_FILES #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
 
 
 # make a class to hold information from get epochs
@@ -104,9 +105,9 @@ def get_epochs(type,
         Cannot be greater than nperseg - 1.
     """
     if orig_data is None:
-        data = load_data(filename)
+        data = load_data(FILENAME3)
     else:
-        data = orig_data.copy()
+        data = orig_data
 
     # removed first 2 seconds of data
     data = data.crop(2)
@@ -116,6 +117,7 @@ def get_epochs(type,
     # get data for one class
 
     ants = [i["description"] for i in data.annotations]
+    print(ants)
 
     find_in_ants = type
     false_found = 0 # This recourds 1 if False-find_in_ants is found and 0 if it isn't
@@ -172,7 +174,7 @@ def get_epochs(type,
         f2_fs = []
         f2_ts = []
 
-        for x in range(len(f1_epochs)):
+        for x in range(len(f2_epochs)):
             specs = []
             chnData = f2_epochs[x].pick_channels(channels).get_data()[0]
             for i in range(chnData.shape[0]):
@@ -190,14 +192,16 @@ def get_epochs(type,
 
         f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
-    if false_found:
-        if not true_found:
-            return f1, None
-        if true_found:
-            return f1, f2
-    if false_found and true_found:
-        return None, None
+    print("true_found is: " + str(true_found))
 
+    if true_found and not false_found:
+        return 0, f2
+    if flase_found and not true_found:
+        return f1, 0
+    if not false_found and not true_found:
+        return 0, 0
+
+    return f1, f2
 
 def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
         """Plots a spectrogram of FFT.
