@@ -190,7 +190,13 @@ def get_epochs(type,
 
         f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
-    return f1, f2
+    if false_found:
+        if !true_found:
+            return f1, None
+        if true_found:
+            return f1, f2
+    if false_found and true_found:
+        return None, None
 
 
 def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
