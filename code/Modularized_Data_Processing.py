@@ -92,6 +92,7 @@ def get_epochs(type,
             SSVEP
             TMI
             LMI
+            alpha
     filename : path to datafile (raw.fif.gz file)
     bandpass_range : tuple of lower and upper bandpass bounds
     channels : list of strings; channel names (defaults to SSVEP channels)
@@ -113,12 +114,35 @@ def get_epochs(type,
     data = data.filter(*bandpass_range)
 
     # get data for one class
-    events, eventid = mne.events_from_annotations(data, regexp=f'False-{type}.*')
-    picks = mne.pick_types(data.info, eeg=True)
-    f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
-    events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
-    f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) # Should these values be changed to tmin=1, tmin=4
+    find_in_ants = type
+    false_found = 0 # This recourds 1 if False-find_in_ants is found and 0 if it isn't
+    true_found = 0 # This recourds 1 if True-find_in_ants is found and 0 if it isn't
+
+    for i in range(len(ants)):
+        if "False-" + find_in_ants in ants[i]:
+            false_found = 1
+            #print("occurrences > or = 1")
+            break
+        if "True-" + find_in_ants in ants[i]:
+            true_found = 1
+            #print("occurrences > or = 1")
+            break
+        if i == len(ants):
+            found = 0
+            #print("Didn't find any of these: " + find_in_ants)
+
+
+    if false_found:
+        events, eventid = mne.events_from_annotations(data, regexp=f'False-{type}.*')
+        picks = mne.pick_types(data.info, eeg=True)
+        f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
+
+    if true_found:
+        events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
+        picks = mne.pick_types(data.info, eeg=True)
+        f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) # Should these values be changed to tmin=1, tmin=4
+
 
     f1_specs = []
     f1_fs = []
