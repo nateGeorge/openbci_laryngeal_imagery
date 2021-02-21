@@ -115,6 +115,8 @@ def get_epochs(type,
 
     # get data for one class
 
+    ants = [i["description"] for i in data.annotations]
+
     find_in_ants = type
     false_found = 0 # This recourds 1 if False-find_in_ants is found and 0 if it isn't
     true_found = 0 # This recourds 1 if True-find_in_ants is found and 0 if it isn't
