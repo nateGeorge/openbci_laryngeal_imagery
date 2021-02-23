@@ -21,9 +21,10 @@ PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
 PATH = PATH1
 FILENAME1 = PATH + "BCIproject_trial-S5_raw.fif.gz"
 FILENAME2 = PATH + "BCIproject_trial-S3_raw.fif.gz"
+FILENAME3 = PATH + "BCIproject_trial-N-1.2-11-2021_raw.fif.gz"
 S_FILES = [f for f in glob.glob(PATH + '*S*raw.fif.gz')]
 N_FILES = [f for f in glob.glob(PATH + '*N*raw.fif.gz')]
-FILENAMES = S_FILES #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
+FILENAMES = N_FILES #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
 
 
 # make a class to hold information from get epochs
@@ -92,6 +93,7 @@ def get_epochs(type,
             SSVEP
             TMI
             LMI
+            alpha
     filename : path to datafile (raw.fif.gz file)
     bandpass_range : tuple of lower and upper bandpass bounds
     channels : list of strings; channel names (defaults to SSVEP channels)
@@ -103,9 +105,9 @@ def get_epochs(type,
         Cannot be greater than nperseg - 1.
     """
     if orig_data is None:
-        data = load_data(filename)
+        data = load_data(FILENAME3)
     else:
-        data = orig_data.copy()
+        data = orig_data
 
     # removed first 2 seconds of data
     data = data.crop(2)
@@ -113,60 +115,93 @@ def get_epochs(type,
     data = data.filter(*bandpass_range)
 
     # get data for one class
-    events, eventid = mne.events_from_annotations(data, regexp=f'False-{type}.*')
-    picks = mne.pick_types(data.info, eeg=True)
-    f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
-    events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
-    f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) # Should these values be changed to tmin=1, tmin=4
+    ants = [i["description"] for i in data.annotations]
+    print(ants)
 
-    f1_specs = []
-    f1_fs = []
-    f1_ts = []
+    find_in_ants = type
+    false_found = 0 # This recourds 1 if False-find_in_ants is found and 0 if it isn't
+    true_found = 0 # This recourds 1 if True-find_in_ants is found and 0 if it isn't
 
-    for x in range(len(f1_epochs)):
-        specs = []
-        chnData = f1_epochs[x].pick_channels(channels).get_data()[0]
-        for i in range(chnData.shape[0]):
-            # frequency, time, intensity (shape fxt)
-            f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
-                                                fs=int(data.info['sfreq']),
-                                                nperseg=nperseg,
-                                                noverlap=noverlap)
-            specs.append(c_spec)
-
-        f1_spec = np.mean(np.array(specs), axis=0)
-        f1_specs.append(f1_spec)
-        f1_fs.append(f1_f)
-        f1_ts.append(f1_t)
-
-    f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
+    for i in range(len(ants)):
+        if "False-" + find_in_ants in ants[i]:
+            false_found = 1
+            #print("occurrences > or = 1")
+            break
+        if "True-" + find_in_ants in ants[i]:
+            true_found = 1
+            #print("occurrences > or = 1")
+            break
+        if i == len(ants):
+            found = 0
+            #print("Didn't find any of these: " + find_in_ants)
 
 
-    f2_specs = []
-    f2_fs = []
-    f2_ts = []
+    if false_found:
+        events, eventid = mne.events_from_annotations(data, regexp=f'False-{type}.*')
+        picks = mne.pick_types(data.info, eeg=True)
+        f1_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) #true epochs or false epochs
 
-    for x in range(len(f1_epochs)):
-        specs = []
-        chnData = f2_epochs[x].pick_channels(channels).get_data()[0]
-        for i in range(chnData.shape[0]):
-            # frequency, time, intensity (shape fxt)
-            f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
-                                                fs=data.info['sfreq'],
-                                                nperseg=nperseg,
-                                                noverlap=noverlap)
-            specs.append(c_spec)
+        f1_specs = []
+        f1_fs = []
+        f1_ts = []
 
-        f2_spec = np.mean(np.array(specs), axis=0)
-        f2_specs.append(f2_spec)
-        f2_fs.append(f2_f)
-        f2_ts.append(f2_t)
+        for x in range(len(f1_epochs)):
+            specs = []
+            chnData = f1_epochs[x].pick_channels(channels).get_data()[0]
+            for i in range(chnData.shape[0]):
+                # frequency, time, intensity (shape fxt)
+                f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
+                                                    fs=int(data.info['sfreq']),
+                                                    nperseg=nperseg,
+                                                    noverlap=noverlap)
+                specs.append(c_spec)
 
-    f2 = dataHandler(f2_specs, f2_fs, f2_ts)
+            f1_spec = np.mean(np.array(specs), axis=0)
+            f1_specs.append(f1_spec)
+            f1_fs.append(f1_f)
+            f1_ts.append(f1_t)
+
+        f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
+
+    if true_found:
+        events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
+        picks = mne.pick_types(data.info, eeg=True)
+        f2_epochs = mne.Epochs(data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None) # Should these values be changed to tmin=1, tmin=4
+
+
+        f2_specs = []
+        f2_fs = []
+        f2_ts = []
+
+        for x in range(len(f2_epochs)):
+            specs = []
+            chnData = f2_epochs[x].pick_channels(channels).get_data()[0]
+            for i in range(chnData.shape[0]):
+                # frequency, time, intensity (shape fxt)
+                f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
+                                                    fs=data.info['sfreq'],
+                                                    nperseg=nperseg,
+                                                    noverlap=noverlap)
+                specs.append(c_spec)
+
+            f2_spec = np.mean(np.array(specs), axis=0)
+            f2_specs.append(f2_spec)
+            f2_fs.append(f2_f)
+            f2_ts.append(f2_t)
+
+        f2 = dataHandler(f2_specs, f2_fs, f2_ts)
+
+    print("true_found is: " + str(true_found))
+
+    if true_found and not false_found:
+        return 0, f2
+    if flase_found and not true_found:
+        return f1, 0
+    if not false_found and not true_found:
+        return 0, 0
 
     return f1, f2
-
 
 def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
         """Plots a spectrogram of FFT.
