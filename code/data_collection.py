@@ -357,7 +357,7 @@ def miPrompt(window, miType, holdTime):
     return start, stop
 
 
-def ssvepVideo(window, frequency_1=7, frequency_2=12):
+def ssvepVideo(window, frequency_1=10, frequency_2=15):
     """Checks to see if the duration of the ssvep stimulus is the correct length.
     Parameters
     ----------
@@ -374,18 +374,18 @@ def ssvepVideo(window, frequency_1=7, frequency_2=12):
         end : flt
             The end time of the SSVEP video
     """
-    # 7 Hz is on the right so it represents yes
+    # 10 Hz (used to be 7 Hz) is on the right so it represents yes
     win_size = window.size
     # size and location of movies
     dim = 0.5 * win_size[1]
     placement = 0.3 * win_size[0]
 
     ssvep_right = visual.MovieStim3(window,
-                            f'media/f{str(frequency_1)}Hz.avi',
+                            f'media/{frequency_1}Hz.avi',
                             size=(dim, dim),
                             pos=[placement, 0])
     ssvep_left = visual.MovieStim3(window,
-                            f'media/f{str(frequency_2)}Hz.avi',
+                            f'media/{frequency_2}Hz.avi',
                             size=(dim, dim),
                             pos=[-placement, 0])
 

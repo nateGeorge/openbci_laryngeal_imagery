@@ -7,11 +7,11 @@ h, w = 500, 500
 screen = np.ones((h, w, 3), dtype=float) * 255
 
 seconds = 5
-frequency = 1  # don't go above 15 for SSVEP; probably won't work
+frequency = 15  # don't go above 15 for SSVEP; probably won't work
 fps = 60  # frames per second -- max 60 on most monitors
 filename = f'{frequency}Hz.avi'
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-out = cv2.VideoWriter(video_filename, fourcc, fps, (w, h))
+out = cv2.VideoWriter(filename, fourcc, fps, (w, h))
 
 time_s = np.arange(0, seconds, 1/fps)
 # multiply by frequency to get more cycles per second for higher frequency

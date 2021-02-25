@@ -39,15 +39,21 @@ def load_data(filename=FILENAME1):
     if filename is None:
         root = Tk()
         root.withdraw()
-        filename = filedialog.askopenfilename(initialdir = "PATH1",title = "Select mne data file",filetypes = (("mne files","*.fif.gz *.fif"),("all files","*.*")))
+        filename = filedialog.askopenfilename(initialdir = "PATH1",
+                            title = "Select mne data file",
+                            filetypes = (("mne files", "*.fif.gz *.fif"), ("all files", "*.*")))
         return mne.io.read_raw_fif(filename, preload=True)
     else:
         return mne.io.read_raw_fif(filename, preload=True)
 
 
-def load_many_data(filenames=FILENAMES):
+def load_many_data(filenames=FILENAMES, clean=True, remove=2, bandpass_range=(5, 50)):
+    """
+    Loads several files and cleans data if clean is True. Returns a concatenated set of data (MNE object).
+    """
+    # TODO: check for matching channels and other errors
+
     raw_data = []
-    i=0
 
     if filenames is None:
         # open tkinter dialogue
@@ -57,16 +63,8 @@ def load_many_data(filenames=FILENAMES):
         filenames = filedialog.askopenfilenames()
     for f in filenames:
         #Check sample frequencies and ask user which sfreq files they would like to look at
-
-        cur_raw = load_data(f)#current raw object
-
-
-        # sfreqs = cur_raw[i]['info']['sfreq']
-
-        # if
-
+        cur_raw = load_data(f)  # current raw object
         raw_data.append(cur_raw)
-
 
 
     print("The length of raw_data is:" + str(len(raw_data)))
@@ -74,17 +72,36 @@ def load_many_data(filenames=FILENAMES):
     # print("The length of the file list is:" + str(len([PATH1 + f for f in glob.glob(PATH1 + '*.raw.fif.gz')]))) #This file list doesn't return anything
 
 
-    return mne.concatenate_raws(raw_data)
+    data = mne.concatenate_raws(raw_data)
+    if clean:
+        data = clean_data(data, remove=remove, bandpass_range=bandpass_range)
 
+    return data
+
+
+def clean_data(data, remove=2, bandpass_range=(5, 50)):
+    """
+    Removes first 2 seconds and bandpass filters data. Takes MNE data object and tuple for bandpass filter range.
+    """
+    # bandpass filter
+    data.filter(*bandpass_range)
+
+    # remove first seconds data
+    print(f'removing first {remove} seconds')
+    data.crop(remove)
+
+    return data
 
 
 def get_epochs(type,
                 orig_data=None,
                 filename=FILENAME1,
+                clean=True,
+                remove=2,
                 bandpass_range=(5, 50),
                 channels=["O1", "O2", "P3", "P4"],
-                nperseg=1000,
-                noverlap=800):
+                nperseg=2000,
+                noverlap=1000):
     """Get epochs of eeg data and creates spectograms.
     Parameters
     ----------
@@ -94,7 +111,9 @@ def get_epochs(type,
             TMI
             LMI
             alpha
+    orig_data : data to use. Will not load new data if this is not None.
     filename : path to datafile (raw.fif.gz file)
+    clean : Boolean; if True, cleans newly loaded data. Will not clean orig_data if used.
     bandpass_range : tuple of lower and upper bandpass bounds
     channels : list of strings; channel names (defaults to SSVEP channels)
     nperseg : int, Number of points per segment in spectrogram calculation;
@@ -106,18 +125,14 @@ def get_epochs(type,
     """
     if orig_data is None:
         data = load_data(FILENAME3)
+        if clean:
+            data = clean_data(data, remove=remove, bandpass_range=bandpass_range)
     else:
         data = orig_data
-
-    # removed first 2 seconds of data
-    data = data.crop(2)
-    # bandpass filter
-    data = data.filter(*bandpass_range)
 
     # get data for one class
 
     ants = [i["description"] for i in data.annotations]
-    print(ants)
 
     find_in_ants = type
     false_found = 0 # This recourds 1 if False-find_in_ants is found and 0 if it isn't
@@ -125,14 +140,12 @@ def get_epochs(type,
 
     for i in range(len(ants)):
         if "False-" + find_in_ants in ants[i]:
-            false_found = 1
+            false_found = True
             #print("occurrences > or = 1")
-            break
-        if "True-" + find_in_ants in ants[i]:
-            true_found = 1
+        elif "True-" + find_in_ants in ants[i]:
+            true_found = True
             #print("occurrences > or = 1")
-            break
-        if i == len(ants):
+        elif i == len(ants):
             found = 0
             #print("Didn't find any of these: " + find_in_ants)
 
@@ -145,6 +158,8 @@ def get_epochs(type,
         f1_specs = []
         f1_fs = []
         f1_ts = []
+
+        time_add = nperseg / data.info['sfreq'] - 1
 
         for x in range(len(f1_epochs)):
             specs = []
@@ -160,7 +175,7 @@ def get_epochs(type,
             f1_spec = np.mean(np.array(specs), axis=0)
             f1_specs.append(f1_spec)
             f1_fs.append(f1_f)
-            f1_ts.append(f1_t)
+            f1_ts.append(f1_t + time_add)
 
         f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
 
@@ -188,7 +203,7 @@ def get_epochs(type,
             f2_spec = np.mean(np.array(specs), axis=0)
             f2_specs.append(f2_spec)
             f2_fs.append(f2_f)
-            f2_ts.append(f2_t)
+            f2_ts.append(f2_t + time_add)
 
         f2 = dataHandler(f2_specs, f2_fs, f2_ts)
 
@@ -196,14 +211,15 @@ def get_epochs(type,
 
     if true_found and not false_found:
         return 0, f2
-    if flase_found and not true_found:
+    if false_found and not true_found:
         return f1, 0
     if not false_found and not true_found:
         return 0, 0
 
     return f1, f2
 
-def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
+
+def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50], vmax=None):
         """Plots a spectrogram of FFT.
         Parameters
         ----------
@@ -219,7 +235,7 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
             File name of the saved image.
         """
         f = plt.figure(figsize=(5, 5))
-        plt.pcolormesh(ts, fs, spec, shading='gouraud')
+        plt.pcolormesh(ts, fs, spec, shading='gouraud', vmax=vmax)
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')
         plt.ylim(ylim)
@@ -230,7 +246,7 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50]):
             if filename is None:
                 filename = 'saved_plot.png'
 
-            plt.savefig(filename)
+            plt.savefig(filename, dpi=300)
 
 
 def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
