@@ -30,6 +30,7 @@ FILENAMES = N_FILES #This file list doesn't return anything; glob.glob only seem
 # make a class to hold information from get epochs
 
 class dataHandler:
+    #It would be good to add in a way of storing an annotation description for each spectrogram so we can confirm the type of trial being represented
     def __init__(self, specs, fs, ts):
         self.specs = specs
         self.fs = fs
@@ -183,6 +184,7 @@ def get_epochs(type,
             f1_ts.append(f1_t + time_add)
 
         f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
+                                                 # maybe it would also be a good idea to add the annotation description to each f1 object or f1 spectrogram so we can confirm the spectrogram types
 
     if true_found:
         events, eventid = mne.events_from_annotations(data, regexp=f'True-{type}.*')
@@ -194,7 +196,7 @@ def get_epochs(type,
         f2_fs = []
         f2_ts = []
 
-        time_add = nperseg / data.info['sfreq'] - 1 
+        time_add = nperseg / data.info['sfreq'] - 1
 
         for x in range(len(f2_epochs)):
             specs = []
@@ -212,7 +214,7 @@ def get_epochs(type,
             f2_fs.append(f2_f)
             f2_ts.append(f2_t + time_add)
 
-        f2 = dataHandler(f2_specs, f2_fs, f2_ts)
+        f2 = dataHandler(f2_specs, f2_fs, f2_ts) # maybe it would also be a good idea to add the annotation description to each f2 object or f2 spectrogram so we can confirm the spectrogram types
 
     print("true_found is: " + str(true_found))
 
