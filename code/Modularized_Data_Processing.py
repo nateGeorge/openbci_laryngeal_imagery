@@ -122,6 +122,11 @@ def get_epochs(type,
     noverlap : int, Number of overlapping points for fourier transform window for
         spectrogram calcuations. Increase for more time datapoints in spectrogram.
         Cannot be greater than nperseg - 1.
+    -------
+    Returns
+    -------
+    f1 : obj - contains timesteps (ts), frequencies (fs), and spectrograms (specs) for the first frequency, i.e. the frequency representing false
+    f2 : obj - contains timesteps (ts), frequencies (fs), and spectrograms (specs) for the second frequency, i.e. the frequency representing true
     """
     if orig_data is None:
         data = load_data(FILENAME3)
@@ -159,7 +164,7 @@ def get_epochs(type,
         f1_fs = []
         f1_ts = []
 
-        time_add = nperseg / data.info['sfreq'] - 1
+        time_add = nperseg / data.info['sfreq'] - 1 #could this be taken out of this if statement? we still need time_add when false_found is 0
 
         for x in range(len(f1_epochs)):
             specs = []
@@ -188,6 +193,8 @@ def get_epochs(type,
         f2_specs = []
         f2_fs = []
         f2_ts = []
+
+        time_add = nperseg / data.info['sfreq'] - 1 
 
         for x in range(len(f2_epochs)):
             specs = []
