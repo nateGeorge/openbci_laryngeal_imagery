@@ -267,6 +267,7 @@ def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
     f2 : list
         spectrograms corresponding to the second frequency (on the left, indicates false/no)
     """
+    #The 7 and 12 default frequencies should be changed to 10 (f1) and 15 (f2)
     num_train_samples = int(train_fraction * len(f1.specs))
     idxs = list(range(len(f1.specs)))
     train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
