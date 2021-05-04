@@ -1,7 +1,7 @@
 #functions for data processing should include:
 #   a function for getting the epochs
 #   a function for making a spectrogram
-
+import re
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,27 +16,21 @@ from mne.decoding import CSP
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-PATH1 = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
-PATH2 = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
-PATH = PATH1
-FILENAME1 = PATH + "BCIproject_trial-S5_raw.fif.gz"
-FILENAME2 = PATH + "BCIproject_trial-S3_raw.fif.gz"
-FILENAME3 = PATH + "BCIproject_trial-N-1.2-11-2021_raw.fif.gz"
-S_FILES = [f for f in glob.glob(PATH + '*S*raw.fif.gz')]
-N_FILES = [f for f in glob.glob(PATH + '*N*raw.fif.gz')]
-FILENAMES = N_FILES #This file list doesn't return anything; glob.glob only seems to reognize .gz as the file extension
-
+SAMS_PATH = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
+NATES_PATH = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
 
 # make a class to hold information from get epochs
 
-class dataHandler:
-    #It would be good to add in a way of storing an annotation description for each spectrogram so we can confirm the type of trial being represented
+class spectrogramData:
+    # It would be good to add in a way of storing an annotation description
+    # for each spectrogram so we can confirm the type of trial being represented
     def __init__(self, specs, fs, ts):
         self.specs = specs
         self.fs = fs
         self.ts = ts
 
-def load_data(filename=FILENAME1):
+
+def load_data(filename):
     if filename is None:
         root = Tk()
         root.withdraw()
@@ -48,7 +42,7 @@ def load_data(filename=FILENAME1):
         return mne.io.read_raw_fif(filename, preload=True)
 
 
-def load_many_data(filenames=FILENAMES, clean=True, remove=2, bandpass_range=(5, 50)):
+def load_many_data(filenames, clean=True, first_seconds_remove=2, bandpass_range=(5, 50)):
     """
     Loads several files and cleans data if clean is True. Returns a concatenated set of data (MNE object).
     """
@@ -75,12 +69,12 @@ def load_many_data(filenames=FILENAMES, clean=True, remove=2, bandpass_range=(5,
 
     data = mne.concatenate_raws(raw_data)
     if clean:
-        data = clean_data(data, remove=remove, bandpass_range=bandpass_range)
+        data = clean_data(data, remove=first_seconds_remove, bandpass_range=bandpass_range)
 
     return data
 
 
-def clean_data(data, remove=2, bandpass_range=(5, 50)):
+def clean_data(data, first_seconds_remove=2, bandpass_range=(5, 50)):
     """
     Removes first 2 seconds and bandpass filters data. Takes MNE data object and tuple for bandpass filter range.
     """
@@ -88,15 +82,49 @@ def clean_data(data, remove=2, bandpass_range=(5, 50)):
     data.filter(*bandpass_range)
 
     # remove first seconds data
-    print(f'removing first {remove} seconds')
-    data.crop(remove)
+    print(f'removing first {first_seconds_remove} seconds')
+    data.crop(first_seconds_remove)
 
     return data
 
 
+def clean_bad_channels(data, channels):
+    """
+    Sets bad channels to 0s.
+    Operates on data in-place.
+
+    data - MNE data object
+    channels - string or list of strings with channel names
+    """
+    data.apply_function(lambda x: x * 0, channels)
+
+
+def load_clean_all_data(path=NATES_PATH):
+    """
+    Loads and cleans all current data. 
+    """
+    filenames = [f for f in glob.glob(path + '*_raw.fif.gz')]
+    list_of_data = []
+    for f in filenames:
+        data = load_data(f)
+        if re.search('N-\d\.2-22-2021', f) is not None:
+            clean_bad_channels(data, 'P3')
+        elif f == 'BCIproject_trial-S-1.3-4-2021_raw.fif.gz':
+            clean_bad_channels(data, 'F8')
+        elif f == 'BCIproject_trial-S-2.3-8-2021_raw.fif.gz':
+            clean_bad_channels(data, 'Cz')
+        elif f == 'BCIproject_trial-S-3.3-25-2021_raw.fif.gz':
+            pass
+            # clean_bad_channels(data, ['Cz', 'C1'])
+        list_of_data.append(data)
+    
+    all_data = mne.concatenate_raws(list_of_data)
+    return all_data
+
+
 def get_epochs(type,
                 orig_data=None,
-                filename=FILENAME1,
+                filename=None,
                 clean=True,
                 remove=2,
                 bandpass_range=(5, 50),
@@ -130,7 +158,11 @@ def get_epochs(type,
     f2 : obj - contains timesteps (ts), frequencies (fs), and spectrograms (specs) for the second frequency, i.e. the frequency representing true
     """
     if orig_data is None:
-        data = load_data(FILENAME3)
+        try:
+            data = load_data(filename)
+        except:
+            raise('if orig_data is None, must provide filename')
+            return
         if clean:
             data = clean_data(data, remove=remove, bandpass_range=bandpass_range)
     else:
@@ -183,7 +215,7 @@ def get_epochs(type,
             f1_fs.append(f1_f)
             f1_ts.append(f1_t + time_add)
 
-        f1 = dataHandler(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
+        f1 = spectrogramData(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
                                                  # maybe it would also be a good idea to add the annotation description to each f1 object or f1 spectrogram so we can confirm the spectrogram types
 
     if true_found:
@@ -214,7 +246,7 @@ def get_epochs(type,
             f2_fs.append(f2_f)
             f2_ts.append(f2_t + time_add)
 
-        f2 = dataHandler(f2_specs, f2_fs, f2_ts) # maybe it would also be a good idea to add the annotation description to each f2 object or f2 spectrogram so we can confirm the spectrogram types
+        f2 = spectrogramData(f2_specs, f2_fs, f2_ts) # maybe it would also be a good idea to add the annotation description to each f2 object or f2 spectrogram so we can confirm the spectrogram types
 
     print("true_found is: " + str(true_found))
 
@@ -258,7 +290,7 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50], v
             plt.savefig(filename, dpi=300)
 
 
-def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
+def setup_ssvep_spectrograms_for_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
     """Uses data from get_epochs() in f1 and f2 to create a list of features and targets.
     Parameters
     ----------
@@ -290,9 +322,7 @@ def setup_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
     test_features = test_features.T
 
     features = np.concatenate((train_features, test_features), axis=0)
-
     targets = np.concatenate((train_targets, test_targets), axis=0)
-
 
     max_train_indx = train_f1s.shape[1] + train_f1s.shape[1] # I want to check with DR. George to make sure this is correct
 
@@ -311,8 +341,7 @@ def SVC(features, targets, max_train_indx, C=0.01):
     print('testing accuracy:', svc.score(features[max_train_indx :], targets[max_train_indx:]))
 
 
-
-def CSP_LDA(type, filename=FILENAME1):
+def CSP_LDA(type, filename):
     """Does machine learning on data using common spatial patterns and Linear Discriminant Analysis.
     Parameters
     ----------
@@ -324,7 +353,7 @@ def CSP_LDA(type, filename=FILENAME1):
         Name of file to load data from
 
     """
-    if filename == "":
+    if filename is not None:
         raw = load_data(filename)
         raw.annotations.description
     else:
