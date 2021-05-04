@@ -42,18 +42,19 @@ class eegData:
         else:
             self.path = path
 
-        self.alpha_spectrograms_true = spectrogramData()
-        self.alpha_spectrograms_false
-        self.ssvep_spectrograms_true
-        self.ssvep_spectrograms_false
-        self.MA_spectrograms_true
-        self.MA_spectrograms_false
-        self.MI_spectrograms_true
-        self.MI_spectrograms_false
-        self.LA_spectrograms_true
-        self.LA_spectrograms_false
-        self.LI_spectrograms_true
-        self.LI_spectrograms_false
+        # remove these - should be created in other functions
+        # self.alpha_spectrograms_true = spectrogramData()
+        # self.alpha_spectrograms_false
+        # self.ssvep_spectrograms_true
+        # self.ssvep_spectrograms_false
+        # self.MA_spectrograms_true
+        # self.MA_spectrograms_false
+        # self.MI_spectrograms_true
+        # self.MI_spectrograms_false
+        # self.LA_spectrograms_true
+        # self.LA_spectrograms_false
+        # self.LI_spectrograms_true
+        # self.LI_spectrograms_false
 
 
     def load_data(self, filename):
@@ -130,6 +131,10 @@ class eegData:
         self.data = all_data
 
 
+    def load_clean_one_dataset(self, filename, flatten=False, standardize=True):
+        pass
+
+
     def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=['O1', 'O2']):
         events, eventid = mne.events_from_annotations(self.data, regexp=annotation_regexp)
         picks = mne.pick_types(self.data.info, eeg=True)
@@ -171,7 +176,7 @@ class eegData:
 
     def plot_all_alpha_spectrograms(self):
         pass
-    
+
 
 def load_data(filename):
     if filename is None:
