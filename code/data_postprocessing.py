@@ -131,7 +131,7 @@ class eegData:
         self.data = all_data
 
 
-    def load_clean_one_dataset(self, filename, flatten=False, standardize=True):
+    def load_clean_one_dataset(self, filename, flatten=False, standardize=False):
         """
         Loads and cleans one dataset
         """
@@ -139,6 +139,15 @@ class eegData:
 
         if flatten:
             # clean_bad_channels(data, 'P3')
+            if re.search('N-\d\.2-22-2021', f) is not None:
+                clean_bad_channels(data, 'P3')
+            elif f == 'BCIproject_trial-S-1.3-4-2021_raw.fif.gz':
+                clean_bad_channels(data, 'F8')
+            elif f == 'BCIproject_trial-S-2.3-8-2021_raw.fif.gz':
+                clean_bad_channels(data, 'Cz')
+            elif f == 'BCIproject_trial-S-3.3-25-2021_raw.fif.gz':
+                pass
+                # clean_bad_channels(data, ['Cz', 'C1'])
             pass
 
         if standardize:
@@ -185,9 +194,35 @@ class eegData:
         for annot_regex, spect_var in zip(annotation_regular_expressions, spectrogram_variables):
             self.get_spectograms(annot_regex, spect_var)
 
+    def create_alpha_spectrograms(self, channels=['O1', 'O2']):
+        """
+        Create the false_epochs and true_epochs to be used in displaying an alpha wave spectrogram.
+        """
 
-    def plot_all_alpha_spectrograms(self):
-        pass
+        false_epochs, true_epochs = get_epochs('alpha', self.data, nperseg=2000, noverlap=1000, channels=channels)
+
+        return false_epochs, true_epochs
+
+
+    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2']):
+        """
+        Plots all alpha spectrograms.
+        """
+
+        false_epochs, true_epochs = self.create_alpha_spectrograms()
+
+        i = 0
+
+        for i in range(len(false_epochs.ts)):
+            print("False : " + str(i))
+            plot_spectrogram(false_epochs.ts[i], false_epochs.fs[i], false_epochs.specs[i], vmax=50)
+
+
+        i = 0
+
+        for i in range(len(true_epochs.ts)):
+            print("True : " + str(i))
+            plot_spectrogram(true_epochs.ts[i], true_epochs.fs[i], true_epochs.specs[i], vmax=50)
 
 
 def load_data(filename):
