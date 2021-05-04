@@ -97,13 +97,13 @@ class eegData:
             std = np.std(data.get_data(channel))
             mean = np.mean(data.get_data(channel))
             data.apply_function(lambda x: (x - mean)/std, channel)
-        
+
         return data
 
 
     def load_clean_all_data(self, flatten=False, standardize=True):
         """
-        Loads and cleans all current data. 
+        Loads and cleans all current data.
         """
         filenames = [f for f in glob.glob(self.path + '*_raw.fif.gz')]
         list_of_data = []
@@ -125,14 +125,26 @@ class eegData:
                 self.standardize_all_channels(data)
 
             list_of_data.append(data)
-        
+
         all_data = mne.concatenate_raws(list_of_data)
         self.annotation_descriptions = [i["description"] for i in all_data.annotations]
         self.data = all_data
 
 
     def load_clean_one_dataset(self, filename, flatten=False, standardize=True):
-        pass
+        """
+        Loads and cleans one dataset
+        """
+        self.data = self.load_data(filename)
+
+        if flatten:
+            # clean_bad_channels(data, 'P3')
+            pass
+
+        if standardize:
+            self.standardize_all_channels(self.data)
+
+        self.annotation_descriptions = self.data.annotations
 
 
     def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=['O1', 'O2']):
@@ -249,7 +261,7 @@ def clean_bad_channels(data, channels):
 
 def load_clean_all_data(path=NATES_PATH):
     """
-    Loads and cleans all current data. 
+    Loads and cleans all current data.
     """
     filenames = [f for f in glob.glob(path + '*_raw.fif.gz')]
     list_of_data = []
@@ -265,7 +277,7 @@ def load_clean_all_data(path=NATES_PATH):
             pass
             # clean_bad_channels(data, ['Cz', 'C1'])
         list_of_data.append(data)
-    
+
     all_data = mne.concatenate_raws(list_of_data)
     return all_data
 
