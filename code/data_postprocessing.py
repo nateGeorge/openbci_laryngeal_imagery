@@ -198,31 +198,32 @@ class eegData:
         """
         Create the false_epochs and true_epochs to be used in displaying an alpha wave spectrogram.
         """
+        self.alpha_spectrograms = {}
 
-        false_epochs, true_epochs = get_epochs('alpha', self.data, nperseg=2000, noverlap=1000, channels=channels)
-
-        return false_epochs, true_epochs
+        self.alpha_spectrograms['false_epochs'], self.alpha_spectrograms['true_epochs'] = get_epochs('alpha', self.data, nperseg=2000, noverlap=1000, channels=channels)
 
 
-    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2']):
+
+    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2'], reset_spectrograms=True):
         """
         Plots all alpha spectrograms.
         """
 
-        false_epochs, true_epochs = self.create_alpha_spectrograms()
+        if not hasattr(self, 'alpha_spectrograms') or reset_spectrograms:
+            self.create_alpha_spectrograms()
 
         i = 0
 
-        for i in range(len(false_epochs.ts)):
+        for i in range(len(self.alpha_spectrograms['false_epochs'].ts)):
             print("False : " + str(i))
-            plot_spectrogram(false_epochs.ts[i], false_epochs.fs[i], false_epochs.specs[i], vmax=50)
+            plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=50)
 
 
         i = 0
 
-        for i in range(len(true_epochs.ts)):
+        for i in range(len(self.alpha_spectrograms['true_epochs'].ts)):
             print("True : " + str(i))
-            plot_spectrogram(true_epochs.ts[i], true_epochs.fs[i], true_epochs.specs[i], vmax=50)
+            plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=50)
 
 
 def load_data(filename):
