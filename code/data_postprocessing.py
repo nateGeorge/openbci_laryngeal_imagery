@@ -215,15 +215,53 @@ class eegData:
         i = 0
 
         for i in range(len(self.alpha_spectrograms['false_epochs'].ts)):
-            print("False : " + str(i))
+            print("False Alpha : " + str(i))
             plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=50)
 
 
         i = 0
 
         for i in range(len(self.alpha_spectrograms['true_epochs'].ts)):
-            print("True : " + str(i))
+            print("True Alpha : " + str(i))
             plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=50)
+
+
+
+    def create_SSVEP_spectrograms(self, channels=['O1', 'O2']):
+        """
+        Create the ssvep spectrograms
+        """
+        self.SSVEP_spectrograms = {}
+
+        self.SSVEP_spectrograms['false_epochs'], self.SSVEP_spectrograms['true_epochs'] =  get_epochs('SSVEP', self.data, nperseg=2000, noverlap=1000, channels=channels)
+
+
+
+
+    def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=True):
+        """
+        Plot the SSVEP spectrograms
+        """
+        if not hasattr(self, 'SSVEP_spectrograms') or reset_spectrograms:
+            self.create_SSVEP_spectrograms()
+
+        if channels != None:
+            self.create_SSVEP_spectrograms(channels)
+
+        i = 0
+
+        for i in range(len(self.SSVEP_spectrograms['false_epochs'].ts)):
+            print("False SSVEP : " + str(i))
+            plot_spectrogram(self.SSVEP_spectrograms['false_epochs'].ts[i], self.SSVEP_spectrograms['false_epochs'].fs[i], self.SSVEP_spectrograms['false_epochs'].specs[i], vmax=50)
+
+        i = 0
+
+        for i in range(len(self.SSVEP_spectrograms['true_epochs'].ts)):
+            print("True SSVEP : " + str(i))
+            plot_spectrogram(self.SSVEP_spectrograms['true_epochs'].ts[i], self.SSVEP_spectrograms['true_epochs'].fs[i], self.SSVEP_spectrograms['true_epochs'].specs[i], vmax=50)
+
+
+
 
 
 def load_data(filename):
