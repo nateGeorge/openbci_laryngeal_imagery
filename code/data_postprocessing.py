@@ -5,6 +5,7 @@ import re
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import mne
 from sklearn.svm import LinearSVC, SVC
@@ -131,11 +132,13 @@ class eegData:
         self.data = all_data
 
 
-    def load_clean_one_dataset(self, filename, flatten=False, standardize=False):
+    def load_clean_one_dataset(self, filename, flatten=False, standardize=True):
         """
         Loads and cleans one dataset
         """
         self.data = self.load_data(filename)
+
+        self.data = self.clean_data(self.data)
 
         if flatten:
             # clean_bad_channels(data, 'P3')
@@ -204,7 +207,7 @@ class eegData:
 
 
 
-    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2'], reset_spectrograms=True):
+    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2'], reset_spectrograms=True, vmax=50):
         """
         Plots all alpha spectrograms.
         """
@@ -216,14 +219,14 @@ class eegData:
 
         for i in range(len(self.alpha_spectrograms['false_epochs'].ts)):
             print("False Alpha : " + str(i))
-            plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=50)
+            plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=vmax)
 
 
         i = 0
 
         for i in range(len(self.alpha_spectrograms['true_epochs'].ts)):
             print("True Alpha : " + str(i))
-            plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=50)
+            plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=vmax)
 
 
 
@@ -238,7 +241,7 @@ class eegData:
 
 
 
-    def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=True):
+    def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=True, vmax=5):
         """
         Plot the SSVEP spectrograms
         """
@@ -252,15 +255,64 @@ class eegData:
 
         for i in range(len(self.SSVEP_spectrograms['false_epochs'].ts)):
             print("False SSVEP : " + str(i))
-            plot_spectrogram(self.SSVEP_spectrograms['false_epochs'].ts[i], self.SSVEP_spectrograms['false_epochs'].fs[i], self.SSVEP_spectrograms['false_epochs'].specs[i], vmax=50)
+            plot_spectrogram(self.SSVEP_spectrograms['false_epochs'].ts[i], self.SSVEP_spectrograms['false_epochs'].fs[i], self.SSVEP_spectrograms['false_epochs'].specs[i], vmax=vmax)
 
         i = 0
 
         for i in range(len(self.SSVEP_spectrograms['true_epochs'].ts)):
             print("True SSVEP : " + str(i))
-            plot_spectrogram(self.SSVEP_spectrograms['true_epochs'].ts[i], self.SSVEP_spectrograms['true_epochs'].fs[i], self.SSVEP_spectrograms['true_epochs'].specs[i], vmax=50)
+            plot_spectrogram(self.SSVEP_spectrograms['true_epochs'].ts[i], self.SSVEP_spectrograms['true_epochs'].fs[i], self.SSVEP_spectrograms['true_epochs'].specs[i], vmax=vmax)
 
 
+
+    def prepare_SSVEP_data_for_ml(self, f1=None, f2=None, frequency_1=10, frequency_2=15, train_fraction=0.8):
+        if f1 == None:
+            if not hasattr(self, 'SSVEP_spectrograms'):
+                self.create_SSVEP_spectrograms()
+            f1 = self.SSVEP_spectrograms["false_epochs"]
+        if f2 == None:
+            if not hasattr(self, 'SSVEP_spectrograms'):
+                self.create_SSVEP_spectrograms()
+            f2 = self.SSVEP_spectrograms["true_epochs"]
+
+        self.SSVEP_ml = {}
+        self.features = []
+        self.targets = []
+        self.max_train_indx = []
+
+        #The 7 and 12 default frequencies have be changed to 10 (f1) and 15 (f2)
+        num_train_samples = int(train_fraction * len(f1.specs))
+        idxs = list(range(len(f1.specs)))
+        train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
+        test_idxs = list(set(idxs).difference(set(train_idxs)))
+        test_idxs = list(set(idxs).difference(set(test_idxs)))
+        train_f1s = np.concatenate([f1.specs[i] for i in train_idxs], axis=1)
+        train_f2s = np.concatenate([f2.specs[i] for i in train_idxs], axis=1)
+        test_f1s = np.concatenate([f1.specs[i] for i in test_idxs], axis=1)
+        test_f2s = np.concatenate([f2.specs[i] for i in test_idxs], axis=1)
+
+        train_features = np.concatenate((train_f1s, train_f2s), axis=-1)
+        train_targets = np.array([frequency_1] * train_f1s.shape[1] + [frequency_2] * train_f2s.shape[1])
+
+        train_features = train_features[:, train_idxs].T
+        train_targets = train_targets[train_idxs]
+
+        test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
+        test_targets = np.array([frequency_1] * test_f1s.shape[1] + [frequency_2] * test_f2s.shape[1])
+
+        test_features = test_features.T
+
+        self.SSVEP_ml['features'] = np.concatenate((train_features, test_features), axis=0)
+        self.SSVEP_ml['targets'] = np.concatenate((train_targets, test_targets), axis=0)
+
+        self.SSVEP_ml['max_train_indx'] = train_f1s.shape[1] + train_f1s.shape[1] # I want to check with DR. George to make sure this is correct
+
+        df = pd.DataFrame(self.SSVEP_ml['features'])
+        print(df.shape + train_targets.shape) #stopped working here       
+        df['target'] = train_targets
+
+        setup(df, target='target')
+        best_model = compare_models()
 
 
 
