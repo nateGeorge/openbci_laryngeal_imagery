@@ -209,7 +209,7 @@ class eegData:
 
 
 
-    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2'], reset_spectrograms=True, vmax=50):
+    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2'], reset_spectrograms=True, vmax=7):
         """
         Plots all alpha spectrograms.
         """
@@ -219,16 +219,20 @@ class eegData:
 
         i = 0
 
-        for i in range(len(self.alpha_spectrograms['false_epochs'].ts)):
-            print("False Alpha : " + str(i))
-            plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=vmax)
+        print("check: " + str(self.alpha_spectrograms['false_epochs']))
+
+        if self.alpha_spectrograms['false_epochs'] != 0:
+            for i in range(len(self.alpha_spectrograms['false_epochs'].ts)):
+                print("False Alpha : " + str(i))
+                plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=vmax)
 
 
         i = 0
 
-        for i in range(len(self.alpha_spectrograms['true_epochs'].ts)):
-            print("True Alpha : " + str(i))
-            plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=vmax)
+        if self.alpha_spectrograms['true_epochs'] != 0:
+            for i in range(len(self.alpha_spectrograms['true_epochs'].ts)):
+                print("True Alpha : " + str(i))
+                plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=vmax)
 
 
 
