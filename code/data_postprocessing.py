@@ -16,6 +16,8 @@ from sklearn.model_selection import ShuffleSplit, cross_val_score
 from mne.decoding import CSP
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+import pycaret.classification as pyclf
+
 
 SAMS_PATH = r"C:\Users\Owner\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
 NATES_PATH = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fifs\\"
@@ -305,14 +307,19 @@ class eegData:
         self.SSVEP_ml['features'] = np.concatenate((train_features, test_features), axis=0)
         self.SSVEP_ml['targets'] = np.concatenate((train_targets, test_targets), axis=0)
 
-        self.SSVEP_ml['max_train_indx'] = train_f1s.shape[1] + train_f1s.shape[1] # I want to check with DR. George to make sure this is correct
+        self.SSVEP_ml['max_train_indx'] = train_f1s.shape[1] + train_f1s.shape[1]
 
-        df = pd.DataFrame(self.SSVEP_ml['features'])
-        print(df.shape + train_targets.shape) #stopped working here       
-        df['target'] = train_targets
+        df = pd.DataFrame(train_features) # I want to check with DR. George to make sure this is correct
+        print(len(train_features))
+        df['target'] = train_targets # I want to check with DR. George to make sure this is correct
 
-        setup(df, target='target')
-        best_model = compare_models()
+        pyclf.setup(df, target='target')
+        self.best_model = pyclf.compare_models()
+
+
+    def fit_SSVEP_ML_and_report():
+        pass
+
 
 
 
