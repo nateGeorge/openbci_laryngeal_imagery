@@ -314,7 +314,9 @@ class eegData:
         df['target'] = train_targets # I want to check with DR. George to make sure this is correct
 
         pyclf.setup(df, target='target')
-        self.best_model = pyclf.compare_models()
+        self.best_model = pyclf.compare_models(n_select=1)
+        self.best_model = pyclf.save_model()
+        print(self.best_model)
 
 
     def fit_SSVEP_ML_and_report():
