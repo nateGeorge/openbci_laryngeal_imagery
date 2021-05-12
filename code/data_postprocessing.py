@@ -250,15 +250,15 @@ class eegData:
             self.get_spectrograms(annot_regex, spect_var, channels=chans)
 
 
-    def create_alpha_spectrograms(self, channels=None):
+    def create_alpha_spectrograms(self, nperseg=2000, noverlap=1000, channels=None):
         """
         Create the false_epochs and true_epochs to be used in displaying an alpha wave spectrogram.
         """
         if channels is None:
             channels = self.viz_channels
 
-        self.get_spectrograms('True-alpha-', 'alpha_spectrograms_true')
-        self.get_spectrograms('False-alpha-', 'alpha_spectrograms_false')
+        self.get_spectrograms('True-alpha-', 'alpha_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
+        self.get_spectrograms('False-alpha-', 'alpha_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
 
 
     def plot_spectrogram(self, spectrogram_data, savefig=False, filename=None, ylim=[5, 50], vmax=None):
@@ -290,7 +290,7 @@ class eegData:
             plt.savefig(filename, dpi=300)
 
 
-    def plot_all_alpha_spectrograms(self, channels=None, reset_spectrograms=True, vmax=50):
+    def plot_all_alpha_spectrograms(self, channels=None, reset_spectrograms=False, vmax=50):
         """
         Plots all alpha spectrograms.
         """
@@ -309,18 +309,18 @@ class eegData:
             self.plot_spectrogram(self.alpha_spectrograms_true[i], vmax=vmax)
 
 
-    def create_SSVEP_spectrograms(self, channels=None):
+    def create_SSVEP_spectrograms(self, nperseg=2000, noverlap=1000, channels=None):
         """
         Create the ssvep spectrograms
         """
         if channels is None:
             channels = self.viz_channels
 
-        self.get_spectrograms('True-SSVEP-.*', 'SSVEP_spectrograms_true')
-        self.get_spectrograms('False-SSVEP-.*', 'SSVEP_spectrograms_false')
+        self.get_spectrograms('True-SSVEP-.*', 'SSVEP_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
+        self.get_spectrograms('False-SSVEP-.*', 'SSVEP_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
 
 
-    def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=True, vmax=5):
+    def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=False, vmax=5):
         """
         Plot the SSVEP spectrograms
         """
@@ -374,10 +374,10 @@ class eegData:
         test_f2s = np.concatenate([f2.spectrograms[i] for i in test_idxs], axis=1)
 
         train_features = np.concatenate((train_f1s, train_f2s), axis=-1)
-        train_targets = np.array([frequency_1] * train_f1s.shape[1] + [frequency_2] * train_f2s.shape[1])
+        train_targets = np.array([1] * train_f1s.shape[1] + [0] * train_f2s.shape[1])
 
         test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
-        test_targets = np.array([frequency_1] * test_f1s.shape[1] + [frequency_2] * test_f2s.shape[1])
+        test_targets = np.array([1] * test_f1s.shape[1] + [0] * test_f2s.shape[1])
 
         train_features = train_features.T
         test_features = test_features.T
@@ -393,7 +393,7 @@ class eegData:
 
     def fit_SSVEP_ML_and_report(self, use_gpu=False):
         self.pycaret_setup = pyclf.setup(data=self.SSVEP_train_df, test_data=self.SSVEP_test_df, target='target', use_gpu=use_gpu)
-        self.best_model = pyclf.compare_models()
+        self.best_model = pyclf.compare_models(fold=3)
         self.SSVEP_score_grid = pyclf.pull()
         # self.best_model = pyclf.save_model()
         # print(self.best_model)
@@ -506,6 +506,9 @@ def get_epochs(type,
                 nperseg=2000,
                 noverlap=1000):
     """Get epochs of eeg data and creates spectograms.
+
+    For making figure 2.
+
     Parameters
     ----------
     type : str
@@ -578,7 +581,7 @@ def get_epochs(type,
             chnData = f1_epochs[x].pick_channels(channels).get_data()[0]
             for i in range(chnData.shape[0]):
                 # frequency, time, intensity (shape fxt)
-                f1_f, f1_t, c_spec = spectrogram(chnData[i,:],
+                f1_f, f1_t, c_spec = spsig.spectrogram(chnData[i,:],
                                                     fs=int(data.info['sfreq']),
                                                     nperseg=nperseg,
                                                     noverlap=noverlap)
@@ -609,7 +612,7 @@ def get_epochs(type,
             chnData = f2_epochs[x].pick_channels(channels).get_data()[0]
             for i in range(chnData.shape[0]):
                 # frequency, time, intensity (shape fxt)
-                f2_f, f2_t, c_spec = spectrogram(chnData[i,:],
+                f2_f, f2_t, c_spec = spsig.spectrogram(chnData[i,:],
                                                     fs=data.info['sfreq'],
                                                     nperseg=nperseg,
                                                     noverlap=noverlap)
@@ -656,12 +659,13 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50], v
         plt.ylim(ylim)
         plt.colorbar()
         plt.tight_layout()
-        plt.show()
         if savefig:
             if filename is None:
                 filename = 'saved_plot.png'
 
             plt.savefig(filename, dpi=300)
+        
+        plt.show()
 
 
 def setup_ssvep_spectrograms_for_ml(f1, f2, frequency_1=7, frequency_2=12, train_fraction=0.8):
