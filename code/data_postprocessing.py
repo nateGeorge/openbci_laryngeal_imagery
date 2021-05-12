@@ -216,7 +216,7 @@ class eegData:
 
             average_spectogram = np.mean(np.array(spectrograms), axis=0)
             spectData.append(spectrogramData(average_spectogram, frequencies, times))
-        
+
         setattr(self, variable_for_storing_spectrogram, spectData)
 
 
@@ -296,7 +296,7 @@ class eegData:
         """
         if channels is None:
             channels = self.viz_channels
-            
+
         if self.alpha_spectrograms_true is None or reset_spectrograms:
             self.create_alpha_spectrograms(channels=channels)
 
@@ -315,7 +315,7 @@ class eegData:
         """
         if channels is None:
             channels = self.viz_channels
-            
+
         self.get_spectrograms('True-SSVEP-.*', 'SSVEP_spectrograms_true')
         self.get_spectrograms('False-SSVEP-.*', 'SSVEP_spectrograms_false')
 
@@ -326,7 +326,7 @@ class eegData:
         """
         if channels is None:
             channels = self.viz_channels
-            
+
         if self.SSVEP_spectrograms_false is None or reset_spectrograms:
             self.create_SSVEP_spectrograms(channels=channels)
 
@@ -398,7 +398,7 @@ class eegData:
         # self.best_model = pyclf.save_model()
         # print(self.best_model)
 
-    
+
     def fit_motor_imagery_and_report(self):
         labels = self.MI_epochs.events[:, -1]
         from mne.decoding import CSP
