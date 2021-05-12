@@ -374,7 +374,7 @@ def ssvepVideo(window, frequency_1=10, frequency_2=15):
         end : flt
             The end time of the SSVEP video
     """
-    # 10 Hz (used to be 7 Hz) is on the right so it represents yes
+    # 10 Hz (used to be 7 Hz) is on the right so it represents yes or True
     win_size = window.size
     # size and location of movies
     dim = 0.5 * win_size[1]

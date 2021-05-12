@@ -9,7 +9,7 @@ import pandas as pd
 
 import mne
 from sklearn.svm import LinearSVC, SVC
-from scipy.signal import spectrogram
+import scipy.signal as spsig
 from tkinter import filedialog
 from tkinter import *
 from sklearn.model_selection import ShuffleSplit, cross_val_score
@@ -27,10 +27,10 @@ NATES_PATH = r"C:\Users\words\OneDrive - Regis University\laryngeal_bci\data\fif
 class spectrogramData:
     # It would be good to add in a way of storing an annotation description
     # for each spectrogram so we can confirm the type of trial being represented
-    def __init__(self, specs, fs, ts):
-        self.specs = specs
-        self.fs = fs
-        self.ts = ts
+    def __init__(self, spectrograms, frequencies, times):
+        self.spectrograms = spectrograms
+        self.frequencies = frequencies
+        self.times = times
 
 
 class eegData:
@@ -45,23 +45,28 @@ class eegData:
         else:
             self.path = path
 
-        # remove these - should be created in other functions
-        # self.alpha_spectrograms_true = spectrogramData()
-        # self.alpha_spectrograms_false
-        # self.ssvep_spectrograms_true
-        # self.ssvep_spectrograms_false
-        # self.MA_spectrograms_true
-        # self.MA_spectrograms_false
-        # self.MI_spectrograms_true
-        # self.MI_spectrograms_false
-        # self.LA_spectrograms_true
-        # self.LA_spectrograms_false
-        # self.LI_spectrograms_true
-        # self.LI_spectrograms_false
+        self.alpha_spectrograms_true = None
+        self.alpha_spectrograms_false = None
+        self.SSVEP_spectrograms_true = None
+        self.SSVEP_spectrograms_false = None
+        self.MA_spectrograms_true = None
+        self.MA_spectrograms_false = None
+        self.MI_spectrograms_true = None
+        self.MI_spectrograms_false = None
+        self.LA_spectrograms_true = None
+        self.LA_spectrograms_false = None
+        self.LI_spectrograms_true = None
+        self.LI_spectrograms_false = None
+        self.MA_epochs = None
+        self.MI_epochs = None
+        self.LA_epochs = None
+        self.LI_epochs = None
+
+        self.viz_channels = ['O1', 'O2', 'P3', 'P4']
 
 
     def load_data(self, filename):
-        return mne.io.read_raw_fif(filename, preload=True)
+        return mne.io.read_raw_fif(filename, preload=True, verbose=0)
 
 
     def clean_data(self, data, first_seconds_remove=2, bandpass_range=(5, 50)):
@@ -72,8 +77,7 @@ class eegData:
         # bandpass filter
         data.filter(*bandpass_range)
 
-        # remove first seconds data
-        print(f'removing first {first_seconds_remove} seconds')
+        # print(f'removing first {first_seconds_remove} seconds')
         data.crop(first_seconds_remove)
 
         return data
@@ -132,6 +136,8 @@ class eegData:
         all_data = mne.concatenate_raws(list_of_data)
         self.annotation_descriptions = [i["description"] for i in all_data.annotations]
         self.data = all_data
+        self.get_all_epochs()
+        self.get_all_spectrograms()
 
 
     def load_clean_one_dataset(self, filename, flatten=False, standardize=True):
@@ -146,11 +152,11 @@ class eegData:
             # clean_bad_channels(data, 'P3')
             if re.search('N-\d\.2-22-2021', f) is not None:
                 clean_bad_channels(data, 'P3')
-            elif f == 'BCIproject_trial-S-1.3-4-2021_raw.fif.gz':
+            elif filename == 'BCIproject_trial-S-1.3-4-2021_raw.fif.gz':
                 clean_bad_channels(data, 'F8')
-            elif f == 'BCIproject_trial-S-2.3-8-2021_raw.fif.gz':
+            elif filename == 'BCIproject_trial-S-2.3-8-2021_raw.fif.gz':
                 clean_bad_channels(data, 'Cz')
-            elif f == 'BCIproject_trial-S-3.3-25-2021_raw.fif.gz':
+            elif filename == 'BCIproject_trial-S-3.3-25-2021_raw.fif.gz':
                 pass
                 # clean_bad_channels(data, ['Cz', 'C1'])
             pass
@@ -159,170 +165,243 @@ class eegData:
             self.standardize_all_channels(self.data)
 
         self.annotation_descriptions = self.data.annotations
+        self.get_all_epochs()
+        self.get_all_spectrograms()
 
 
-    def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=['O1', 'O2']):
-        events, eventid = mne.events_from_annotations(self.data, regexp=annotation_regexp)
+    def get_epochs(self, annotation_regexp):
+        """
+        Retrieves epochs with a label via the annotation_regexp (regular expression).
+        """
+        events, eventid = mne.events_from_annotations(self.data, regexp=annotation_regexp, verbose=0)
         picks = mne.pick_types(self.data.info, eeg=True)
-        f1_epochs = mne.Epochs(self.data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None)
+        epochs = mne.Epochs(self.data, events, tmin=0, tmax=5, picks=picks, preload=True, baseline=None, verbose=0)
+        return epochs
 
-        all_spectrograms = []
-        all_frequencies = []
-        times = []
 
+    def get_all_epochs(self):
+        """
+        Stores all epochs for separate events in attributes.
+        """
+        epochs_variables = ['MA_epochs',
+                            'MI_epochs',
+                            'LA_epochs',
+                            'LI_epochs']
+        epochs_regexps = ['.*-TMI-a', '.*-TMI-i', '.*-LMI-a', '.*-LMI-i']
+        for var, regexp in zip(epochs_variables, epochs_regexps):
+            epochs = self.get_epochs(regexp)
+            vars()[var] = epochs
+
+
+    def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=None):
+        if channels is None:
+            channels = self.viz_channels
+
+        epochs = self.get_epochs(annotation_regexp=annotation_regexp)
+        spectData = []
+
+        # adjusts times so they match the spectrograms
         time_add = nperseg / self.data.info['sfreq'] - 1
 
-        for x in range(len(f1_epochs)):
-            specs = []
-            chnData = f1_epochs[x].pick_channels(channels).get_data()[0]
-            for i in range(chnData.shape[0]):
-                # frequency, time, intensity (shape fxt)
-                frequencies, times, spectrogram = spectrogram(chnData[i,:],
+        for i in range(len(epochs)):
+            spectrograms = []
+            channel_data = epochs[i].pick_channels(channels).get_data()[0]
+            for k in range(channel_data.shape[0]):
+                # frequency, time, intensity (shape f*t)
+                frequencies, times, spectrogram = spsig.spectrogram(channel_data[k, :],
                                                             fs=int(self.data.info['sfreq']),
                                                             nperseg=nperseg,
                                                             noverlap=noverlap)
-                specs.append(c_spec)
+                spectrograms.append(spectrogram)
 
-            f1_spec = np.mean(np.array(specs), axis=0)
-            f1_specs.append(f1_spec)
-            f1_fs.append(f1_f)
-            f1_ts.append(f1_t + time_add)
-
-        variable_for_storing_spectrogram = spectrogramData(f1_specs, f1_fs, f1_ts) #for clarity I want to rename f1 and f2 to true and false
-                                                 # maybe it would also be a good idea to add the annotation description to each f1 object or f1 spectrogram so we can confirm the spectrogram types
+            average_spectogram = np.mean(np.array(spectrograms), axis=0)
+            spectData.append(spectrogramData(average_spectogram, frequencies, times))
+        
+        setattr(self, variable_for_storing_spectrogram, spectData)
 
 
     def get_all_spectrograms(self):
-        spectrogram_variables = [self.alpha_spectrograms_true, ]
-        annotation_regular_expressions = ['False-SSVEP-.*', '']
+        spectrogram_variables = ['alpha_spectrograms_true',
+                                'alpha_spectrograms_false',
+                                'MA_spectrograms_true',
+                                'MA_spectrograms_false',
+                                'MI_spectrograms_true',
+                                'MI_spectrograms_false',
+                                'LA_spectrograms_true',
+                                'LA_spectrograms_false',
+                                'LI_spectrograms_true',
+                                'LI_spectrograms_false']
+        annotation_regular_expressions = ['True-alpha-',
+                                            'False-alpha-',
+                                            'True-SSVEP-.*',
+                                            'False-SSVEP-.*',
+                                            'True-TMI-a-',
+                                            'False-TMI-a-',
+                                            'True-TMI-i-',
+                                            'False-TMI-i-',
+                                            'True-LMI-a-',
+                                            'False-LMI-a-',
+                                            'True-LMI-i-',
+                                            'False-LMI-i-']
+        motor_channels = self.data.ch_names
+        channels = [self.viz_channels] * 4 + [motor_channels] * 8
 
-        for annot_regex, spect_var in zip(annotation_regular_expressions, spectrogram_variables):
-            self.get_spectograms(annot_regex, spect_var)
+        for annot_regex, spect_var, chans in zip(annotation_regular_expressions, spectrogram_variables, channels):
+            self.get_spectrograms(annot_regex, spect_var, channels=chans)
 
-    def create_alpha_spectrograms(self, channels=['O1', 'O2']):
+
+    def create_alpha_spectrograms(self, channels=None):
         """
         Create the false_epochs and true_epochs to be used in displaying an alpha wave spectrogram.
         """
-        self.alpha_spectrograms = {}
+        if channels is None:
+            channels = self.viz_channels
 
-        self.alpha_spectrograms['false_epochs'], self.alpha_spectrograms['true_epochs'] = get_epochs('alpha', self.data, nperseg=2000, noverlap=1000, channels=channels)
+        self.get_spectrograms('True-alpha-', 'alpha_spectrograms_true')
+        self.get_spectrograms('False-alpha-', 'alpha_spectrograms_false')
 
 
+    def plot_spectrogram(self, spectrogram_data, savefig=False, filename=None, ylim=[5, 50], vmax=None):
+        """Plots a spectrogram of FFT.
+        Parameters
+        ----------
+        spectrogram_data : spectrogramData object
+        savefig : boolean
+            Whether to save the figure to disk.
+        filename : str
+            File name of the saved image.
+        """
+        f = plt.figure(figsize=(5, 5))
+        plt.pcolormesh(spectrogram_data.times,
+                        spectrogram_data.frequencies,
+                        spectrogram_data.spectrograms,
+                        shading='gouraud',
+                        vmax=vmax)
+        plt.ylabel('Frequency [Hz]')
+        plt.xlabel('Time [sec]')
+        plt.ylim(ylim)
+        plt.colorbar()
+        plt.tight_layout()
+        plt.show()
+        if savefig:
+            if filename is None:
+                filename = 'saved_plot.png'
 
-    def plot_all_alpha_spectrograms(self, channels=['O1', 'O2'], reset_spectrograms=True, vmax=50):
+            plt.savefig(filename, dpi=300)
+
+
+    def plot_all_alpha_spectrograms(self, channels=None, reset_spectrograms=True, vmax=50):
         """
         Plots all alpha spectrograms.
         """
+        if channels is None:
+            channels = self.viz_channels
+            
+        if self.alpha_spectrograms_true is None or reset_spectrograms:
+            self.create_alpha_spectrograms(channels=channels)
 
-        if not hasattr(self, 'alpha_spectrograms') or reset_spectrograms:
-            self.create_alpha_spectrograms()
-
-        i = 0
-
-        for i in range(len(self.alpha_spectrograms['false_epochs'].ts)):
+        for i in range(len(self.alpha_spectrograms_false)):
             print("False Alpha : " + str(i))
-            plot_spectrogram(self.alpha_spectrograms['false_epochs'].ts[i], self.alpha_spectrograms['false_epochs'].fs[i], self.alpha_spectrograms['false_epochs'].specs[i], vmax=vmax)
+            self.plot_spectrogram(self.alpha_spectrograms_false[i], vmax=vmax)
 
-
-        i = 0
-
-        for i in range(len(self.alpha_spectrograms['true_epochs'].ts)):
+        for i in range(len(self.alpha_spectrograms_true)):
             print("True Alpha : " + str(i))
-            plot_spectrogram(self.alpha_spectrograms['true_epochs'].ts[i], self.alpha_spectrograms['true_epochs'].fs[i], self.alpha_spectrograms['true_epochs'].specs[i], vmax=vmax)
+            self.plot_spectrogram(self.alpha_spectrograms_true[i], vmax=vmax)
 
 
-
-    def create_SSVEP_spectrograms(self, channels=['O1', 'O2']):
+    def create_SSVEP_spectrograms(self, channels=None):
         """
         Create the ssvep spectrograms
         """
-        self.SSVEP_spectrograms = {}
-
-        self.SSVEP_spectrograms['false_epochs'], self.SSVEP_spectrograms['true_epochs'] =  get_epochs('SSVEP', self.data, nperseg=2000, noverlap=1000, channels=channels)
-
-
+        if channels is None:
+            channels = self.viz_channels
+            
+        self.get_spectrograms('True-SSVEP-.*', 'SSVEP_spectrograms_true')
+        self.get_spectrograms('False-SSVEP-.*', 'SSVEP_spectrograms_false')
 
 
     def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=True, vmax=5):
         """
         Plot the SSVEP spectrograms
         """
-        if not hasattr(self, 'SSVEP_spectrograms') or reset_spectrograms:
-            self.create_SSVEP_spectrograms()
+        if channels is None:
+            channels = self.viz_channels
+            
+        if self.SSVEP_spectrograms_false is None or reset_spectrograms:
+            self.create_SSVEP_spectrograms(channels=channels)
 
-        if channels != None:
-            self.create_SSVEP_spectrograms(channels)
-
-        i = 0
-
-        for i in range(len(self.SSVEP_spectrograms['false_epochs'].ts)):
+        for i in range(len(self.SSVEP_spectrograms_false)):
             print("False SSVEP : " + str(i))
-            plot_spectrogram(self.SSVEP_spectrograms['false_epochs'].ts[i], self.SSVEP_spectrograms['false_epochs'].fs[i], self.SSVEP_spectrograms['false_epochs'].specs[i], vmax=vmax)
+            self.plot_spectrogram(self.SSVEP_spectrograms_false[i], vmax=vmax)
 
-        i = 0
-
-        for i in range(len(self.SSVEP_spectrograms['true_epochs'].ts)):
+        for i in range(len(self.SSVEP_spectrograms_false)):
             print("True SSVEP : " + str(i))
-            plot_spectrogram(self.SSVEP_spectrograms['true_epochs'].ts[i], self.SSVEP_spectrograms['true_epochs'].fs[i], self.SSVEP_spectrograms['true_epochs'].specs[i], vmax=vmax)
-
+            self.plot_spectrogram(self.SSVEP_spectrograms_true[i], vmax=vmax)
 
 
     def prepare_SSVEP_data_for_ml(self, f1=None, f2=None, frequency_1=10, frequency_2=15, train_fraction=0.8):
-        if f1 == None:
-            if not hasattr(self, 'SSVEP_spectrograms'):
+        if f1 is None or f2 is None:
+            if self.SSVEP_spectrograms_true is None:
                 self.create_SSVEP_spectrograms()
-            f1 = self.SSVEP_spectrograms["false_epochs"]
-        if f2 == None:
-            if not hasattr(self, 'SSVEP_spectrograms'):
-                self.create_SSVEP_spectrograms()
-            f2 = self.SSVEP_spectrograms["true_epochs"]
+            f1_spectrograms, f1_frequencies, f1_times = [], [], []
+            f2_spectrograms, f2_frequencies, f2_times = [], [], []
+            for i in range(len(self.SSVEP_spectrograms_false)):
+                f1_spectrograms.append(self.SSVEP_spectrograms_true[i].spectrograms)
+                f1_frequencies.append(self.SSVEP_spectrograms_true[i].frequencies)
+                f1_times.append(self.SSVEP_spectrograms_true[i].times)
+                f2_spectrograms.append(self.SSVEP_spectrograms_false[i].spectrograms)
+                f2_frequencies.append(self.SSVEP_spectrograms_false[i].frequencies)
+                f2_times.append(self.SSVEP_spectrograms_false[i].times)
+
+            # f1 = spectrogramData(np.array(f1_spectrograms), np.array(f1_frequencies), np.array(f1_times))
+            # f2 = spectrogramData(np.array(f2_spectrograms), np.array(f2_frequencies), np.array(f2_times))
+            f1 = spectrogramData(f1_spectrograms, f1_frequencies, f1_times)
+            f2 = spectrogramData(f2_spectrograms, f2_frequencies, f2_times)
+
 
         self.SSVEP_ml = {}
         self.features = []
         self.targets = []
         self.max_train_indx = []
 
-        #The 7 and 12 default frequencies have be changed to 10 (f1) and 15 (f2)
-        num_train_samples = int(train_fraction * len(f1.specs))
-        idxs = list(range(len(f1.specs)))
+        num_train_samples = int(train_fraction * len(f1.spectrograms))
+        idxs = list(range(len(f1.spectrograms)))
         train_idxs = np.random.choice(idxs, num_train_samples, replace=False)
         test_idxs = list(set(idxs).difference(set(train_idxs)))
-        test_idxs = list(set(idxs).difference(set(test_idxs)))
-        train_f1s = np.concatenate([f1.specs[i] for i in train_idxs], axis=1)
-        train_f2s = np.concatenate([f2.specs[i] for i in train_idxs], axis=1)
-        test_f1s = np.concatenate([f1.specs[i] for i in test_idxs], axis=1)
-        test_f2s = np.concatenate([f2.specs[i] for i in test_idxs], axis=1)
+        train_f1s = np.concatenate([f1.spectrograms[i] for i in train_idxs], axis=1)
+        train_f2s = np.concatenate([f2.spectrograms[i] for i in train_idxs], axis=1)
+        test_f1s = np.concatenate([f1.spectrograms[i] for i in test_idxs], axis=1)
+        test_f2s = np.concatenate([f2.spectrograms[i] for i in test_idxs], axis=1)
 
         train_features = np.concatenate((train_f1s, train_f2s), axis=-1)
         train_targets = np.array([frequency_1] * train_f1s.shape[1] + [frequency_2] * train_f2s.shape[1])
 
-        train_features = train_features[:, train_idxs].T
-        train_targets = train_targets[train_idxs]
-
         test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
         test_targets = np.array([frequency_1] * test_f1s.shape[1] + [frequency_2] * test_f2s.shape[1])
 
+        train_features = train_features.T
         test_features = test_features.T
 
-        self.SSVEP_ml['features'] = np.concatenate((train_features, test_features), axis=0)
-        self.SSVEP_ml['targets'] = np.concatenate((train_targets, test_targets), axis=0)
-
-        self.SSVEP_ml['max_train_indx'] = train_f1s.shape[1] + train_f1s.shape[1]
-
-        df = pd.DataFrame(train_features) # I want to check with DR. George to make sure this is correct
-        print(len(train_features))
-        df['target'] = train_targets # I want to check with DR. George to make sure this is correct
-
-        pyclf.setup(df, target='target')
-        self.best_model = pyclf.compare_models(n_select=1)
-        self.best_model = pyclf.save_model()
-        print(self.best_model)
+        self.SSVEP_train_df = pd.DataFrame(train_features)
+        self.SSVEP_train_df['target'] = train_targets
+        # required for pycaret to work
+        self.SSVEP_train_df['target'] = self.SSVEP_train_df['target'].astype('category')
+        self.SSVEP_test_df = pd.DataFrame(test_features)
+        self.SSVEP_test_df['target'] = test_targets
+        self.SSVEP_test_df['target'] = self.SSVEP_test_df['target'].astype('category')
 
 
-    def fit_SSVEP_ML_and_report():
-        pass
+    def fit_SSVEP_ML_and_report(self, use_gpu=False):
+        self.pycaret_setup = pyclf.setup(data=self.SSVEP_train_df, test_data=self.SSVEP_test_df, target='target', use_gpu=use_gpu)
+        self.best_model = pyclf.compare_models()
+        self.SSVEP_score_grid = pyclf.pull()
+        # self.best_model = pyclf.save_model()
+        # print(self.best_model)
 
-
+    
+    def fit_motor_imagery_and_report(self):
+        labels = self.MI_epochs.events[:, -1]
+        from mne.decoding import CSP
 
 
 def load_data(filename):
