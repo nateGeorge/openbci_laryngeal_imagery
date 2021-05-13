@@ -357,7 +357,7 @@ def miPrompt(window, miType, holdTime):
     return start, stop
 
 
-def ssvepVideo(window, frequency_1=10, frequency_2=15):
+def ssvepVideo(window, frequency_1=10, frequency_2=15, ansWinOnly=True, ansSide=None):
     """Checks to see if the duration of the ssvep stimulus is the correct length.
     Parameters
     ----------
@@ -367,6 +367,10 @@ def ssvepVideo(window, frequency_1=10, frequency_2=15):
             The frequency of SSVEP which will be displayed on the right as the YES response.
         frequency_2 : int
             The frequency of SSVEP which will be displayed on the left as the NO response.
+        ansWinOnly : bool
+            If true, only the correct answer flashing window shows.
+        ansSide : str
+            If ansSide is left, the left video is displayed. If ansSide is right, the right video is displayed
     Returns
     -------
         start : flt
@@ -391,23 +395,37 @@ def ssvepVideo(window, frequency_1=10, frequency_2=15):
                             pos=[-placement, 0])
 
     start = time.time()
-    while ssvep_left.status != -1:
-        ssvep_left.draw()
-        ssvep_right.draw()
-        window.flip()
+
+    if ansSide == 'left':
+        while ssvep_left.status != -1:
+            ssvep_left.draw()
+            window.flip()
+
+    if ansSide == 'right':
+        while ssvep_right.status != -1:
+            ssvep_right.draw()
+            window.flip()
+
+    if ansSide == None:
+        while ssvep_left.status != -1:
+            ssvep_left.draw()
+            ssvep_right.draw()
+            window.flip() #this is a potential source of error in the frequency of the SSVEP signal
 
     end = time.time()
 
     return start, end
 
 
-def ssvepStim(window):
+def ssvepStim(window, corAnsSide):
     """Presents the SSVEP flashing stimuli
 
     Parameters
     ----------
     window : obj
         Psychopy window object.
+    corAnsSide: str
+        The side the correct answer response is on.
 
     Returns
     -------
@@ -428,7 +446,7 @@ def ssvepStim(window):
                         opacity=0,
                         autoDraw=True)
 
-    start, end = ssvepVideo(window)
+    start, end = ssvepVideo(window, ansSide=corAnsSide)
 
     # square1.autoDraw = False
     # square2.autoDraw = False
@@ -513,7 +531,7 @@ def eyes_closed(holdTime):
     return start, end
 
 
-def trialByType(window, yes, type, holdTime=5):
+def trialByType(window, yes, type, holdTime=5, SSVEP_one_win=False):
     """Depending on the type argument given, runs the correct type of experimental trial.
 
     Parameters
@@ -575,8 +593,10 @@ def trialByType(window, yes, type, holdTime=5):
         #present the stimulus
         if yes:
             boxStim = visual.Rect(win=window, pos=((0, 0.25)), lineColor="red")
+            corAnsSide = 'right'
         else:
             boxStim = visual.Rect(win=window, pos=((0, -0.25)), lineColor="red")
+            corAnsSide = 'left'
 
         elephantStim.draw()
         boxStim.draw()
@@ -585,7 +605,11 @@ def trialByType(window, yes, type, holdTime=5):
 
         if check == True:
             window.flip()
-            ssvepStart, ssvepStop = ssvepStim(window)
+            if SSVEP_one_win == True:
+                print(SSVEP_one_win)
+                ssvepStart, ssvepStop = ssvepStim(window, corAnsSide) # here is wehre I need a parameter for one window view
+            else:
+                ssvepStart, ssvepStop = ssvepStim(window, None)
             window.flip()
             return ssvepStart, ssvepStop
         else:
@@ -596,7 +620,7 @@ def trialByType(window, yes, type, holdTime=5):
             time.sleep(2)
             window.flip()
             event.clearEvents()
-            ssvepStart, ssvepStop = trialByType(window, yes, "S")
+            ssvepStart, ssvepStop = trialByType(window, yes, "S", SSVEP_one_win=SSVEP_one_win)
 
 
     if type == "TMI-a":
@@ -785,7 +809,8 @@ def trials(window,
             nLmiTrials_i,
             data,
             holdTime=5,
-            debug=False):
+            debug=False,
+            SSVEP_one_win=False):
     """Runs the experimental protocol for the trial section of the experiment.
 
     Parameters
@@ -866,7 +891,7 @@ def trials(window,
     # repeat the number of ssvep trials
     for iTrial in range(nSsvepTrials):
         yes = yes_nos[iTrial]
-        start, stop = trialByType(window, yes, "S")
+        start, stop = trialByType(window, yes, "S", SSVEP_one_win=SSVEP_one_win)
         data.addTrial(start, (stop - start), yes, "SSVEP")
 
         if debug:
@@ -1060,7 +1085,7 @@ def instructions(window):
     waitForArrow(window)
 
 
-def run_experiment(debug=True):
+def run_experiment(debug=True, SSVEP_one_win=False):
     """
     Runs experiment for data collection.
 
@@ -1069,6 +1094,9 @@ def run_experiment(debug=True):
     debug : bool
         If True, prints debug statements and makes window non-fullscreen.
         If False, does not print debug statements and makes window fullscreen.
+    SSVEP_one_win : bool
+        If False, both SSVEP stimuli windows show up in the SSVEP section.
+        If True, only one SSVEP stimulus window shows up in the SSVEP section.
     """
     data = expData()
 
@@ -1117,12 +1145,12 @@ def run_experiment(debug=True):
 
     instructions(window)
     example(window)
-    n_trials = 10
-    trials(window, n_trials, n_trials, n_trials, n_trials, n_trials, n_trials, data, debug=debug)
+    n_trials = 1
+    trials(window, n_trials, 10, n_trials, n_trials, n_trials, n_trials, data, debug=debug, SSVEP_one_win=SSVEP_one_win)
     window.close()
     data.stopBCI()
 
 
 if __name__ == '__main__':
-    run_experiment(debug=False)
+    run_experiment(debug=True, SSVEP_one_win=True)
     core.quit()
