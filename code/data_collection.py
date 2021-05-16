@@ -446,7 +446,10 @@ def ssvepStim(window, corAnsSide):
                         opacity=0,
                         autoDraw=True)
 
-    start, end = ssvepVideo(window, ansSide=corAnsSide)
+    if corAnsSide != None:
+        start, end = ssvepVideo(window, ansSide=corAnsSide)
+    else:
+        start, end = ssvepVideo(window)
 
     # square1.autoDraw = False
     # square2.autoDraw = False
@@ -609,7 +612,7 @@ def trialByType(window, yes, type, holdTime=5, SSVEP_one_win=False):
                 print(SSVEP_one_win)
                 ssvepStart, ssvepStop = ssvepStim(window, corAnsSide) # here is wehre I need a parameter for one window view
             else:
-                ssvepStart, ssvepStop = ssvepStim(window, None)
+                ssvepStart, ssvepStop = ssvepStim(window, SSVEP_one_win=SSVEP_one_win) # this is where the none on SSVEP_one_win is coming from
             window.flip()
             return ssvepStart, ssvepStop
         else:
@@ -1145,7 +1148,7 @@ def run_experiment(debug=True, SSVEP_one_win=False):
 
     instructions(window)
     example(window)
-    n_trials = 10
+    n_trials = 2
     trials(window, n_trials, n_trials, n_trials, n_trials, n_trials, n_trials, data, debug=debug, SSVEP_one_win=SSVEP_one_win)
     window.close()
     data.stopBCI()
