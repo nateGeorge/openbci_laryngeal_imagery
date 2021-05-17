@@ -183,15 +183,19 @@ class eegData:
         """
         Stores all epochs for separate events in attributes.
         """
-        epochs_variables = ['MA_epochs',
+        epochs_variables = ['alpha_epochs',
+                            'SSVEP_epochs',
+                            'MA_epochs',
                             'MI_epochs',
                             'LA_epochs',
                             'LI_epochs']
-        epochs_regexps = ['.*-TMI-a', '.*-TMI-i', '.*-LMI-a', '.*-LMI-i']
+        epochs_regexps = ['.*alpha', '.*SSVEP.*', '.*-TMI-a', '.*-TMI-i', '.*-LMI-a', '.*-LMI-i']
         for var, regexp in zip(epochs_variables, epochs_regexps):
-            epochs = self.get_epochs(regexp)
-            vars()[var] = epochs
-
+            try:
+                epochs = self.get_epochs(regexp)
+                setattr(self, var, epochs)
+            except:
+               print(f'no epochs found for {regexp}')
 
     def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=None):
         if channels is None:
@@ -247,8 +251,10 @@ class eegData:
         channels = [self.viz_channels] * 4 + [motor_channels] * 8
 
         for annot_regex, spect_var, chans in zip(annotation_regular_expressions, spectrogram_variables, channels):
-            self.get_spectrograms(annot_regex, spect_var, channels=chans)
-
+            try:
+                self.get_spectrograms(annot_regex, spect_var, channels=chans)
+            except:
+                print(f'no epochs found for {annot_regex}')
 
     def create_alpha_spectrograms(self, nperseg=2000, noverlap=1000, channels=None):
         """
@@ -426,8 +432,32 @@ class eegData:
 
 
     def fit_motor_imagery_and_report(self):
+        # break data into chunk before CSP, use CSP data to get labels
         labels = self.MI_epochs.events[:, -1]
-        from mne.decoding import CSP
+        epochs_data = self.MI_epochs.get_data()
+        csp = CSP()
+        csp_data = csp.fit_transform(epochs_data, labels)
+
+        samples_per_exp = epochs_data.shape[-1]
+        true_counter = 0
+        false_counter = 0
+        groups = []
+        # True is 2, False 1
+        for event in labels == 2:
+            if event is True:
+                groups.extend([true_counter] * samples_per_exp)
+                true_counter += 1
+            else:
+                groups.extend([false_counter] * samples_per_exp)
+                false_counter += 1
+        
+        self.csp_df = pd.DataFrame(csp_data)
+        self.csp_df['target'] = labels == 2
+        self.csp_df['group'] = groups
+
+        self.mi_setup = pyclf.setup(self.csp_df)
+        self.best_mi_clf = pyclf.compare_models()
+        
 
 
 def load_data(filename):
