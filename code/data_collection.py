@@ -876,7 +876,7 @@ def trials(window,
                 makeYesnos(nLmiTrials_a//2, nLmiTrials_a//2) + \
                 makeYesnos(nMiTrials_i//2, nMiTrials_i//2) + \
                 makeYesnos(nLmiTrials_i//2, nLmiTrials_i//2)
-    iTrials = 0  # the current trial number intialized to 1
+    iTrials = i  # the current trial number intialized to 1
 
 
     text = """

@@ -346,6 +346,7 @@ class eegData:
 
 
     def prepare_SSVEP_data_for_ml(self, f1=None, f2=None, frequency_1=10, frequency_2=15, train_fraction=0.8, num_groups=3):
+        np.random.seed(42)
         self.SSVEP_test_df = None
         if f1 is None or f2 is None:
             if self.SSVEP_spectrograms_true is None:
@@ -419,45 +420,97 @@ class eegData:
             self.SSVEP_train_df.loc[idxs, 'group'] = i
 
 
-    def fit_SSVEP_ML_and_report(self, use_gpu=False):
+    def fit_SSVEP_ML_and_report(self, num_groups=3, use_gpu=False):
         if self.SSVEP_test_df is None:
             self.pycaret_setup = pyclf.setup(data=self.SSVEP_train_df, target='target', use_gpu=use_gpu, fold_strategy='groupkfold', fold_groups='group')
         else:
             self.pycaret_setup = pyclf.setup(data=self.SSVEP_train_df, test_data=self.SSVEP_test_df, target='target', use_gpu=use_gpu)#, fold_strategy='groupkfold', fold_groups='group')
 
-        self.best_model = pyclf.compare_models(fold=3)
+        self.best_model = pyclf.compare_models(groups='group', fold=num_groups)
         self.SSVEP_score_grid = pyclf.pull()
         # self.best_model = pyclf.save_model()
         # print(self.best_model)
 
 
-    def fit_motor_imagery_and_report(self):
-        # break data into chunk before CSP, use CSP data to get labels
-        labels = self.MI_epochs.events[:, -1]
-        epochs_data = self.MI_epochs.get_data()
-        csp = CSP()
-        csp_data = csp.fit_transform(epochs_data, labels)
+    def fit_motor_imagery_and_report(self, train_fraction=0.8, num_groups=3):
+        np.random.seed(42)
+        # True is 2, False 1
+        labels = self.MI_epochs.events[:, -1] == 2
+        # throw away last point so number of points is 5000
+        epochs_data = self.MI_epochs.get_data()[:, :, :-1]
+        # create extra expochs by splitting them into fifths
+        split_arrs = []
+        for i in range(epochs_data.shape[0]):
+            split_arrs.extend(np.split(epochs_data[i], 5, -1))
+        
+        extra_epochs = np.stack(split_arrs)
+        extra_labels = []
+        for l in labels:
+            extra_labels.extend([int(l)] * 5)
+        
+        extra_labels = np.array(extra_labels)
 
-        samples_per_exp = epochs_data.shape[-1]
         true_counter = 0
         false_counter = 0
         groups = []
-        # True is 2, False 1
         for event in labels == 2:
             if event is True:
-                groups.extend([true_counter] * samples_per_exp)
+                groups.extend([true_counter] * 5)
                 true_counter += 1
             else:
-                groups.extend([false_counter] * samples_per_exp)
+                groups.extend([false_counter] * 5)
                 false_counter += 1
         
-        self.csp_df = pd.DataFrame(csp_data)
-        self.csp_df['target'] = labels == 2
-        self.csp_df['group'] = groups
+        groups = np.array(groups)
+        unique_groups = np.unique(groups)
+        np.random.shuffle(unique_groups)
+        train_groups = np.random.choice(unique_groups, size=int(train_fraction * unique_groups.shape[0]))
+        # test_groups = np.array(set(unique_groups).difference(set(train_groups)))
+        train_idxs = np.where(np.isin(groups, train_groups))
+        test_idxs = np.where(np.isin(groups, train_groups, invert=True))
 
-        self.mi_setup = pyclf.setup(self.csp_df)
-        self.best_mi_clf = pyclf.compare_models()
+        # transforms data into shape of (n_samples, n_channels) 
+        # arrays = [np.squeeze(arr, 0).T for arr in np.vsplit(epochs_data, epochs_data.shape[0])]
+        # all_data = np.concatenate(arrays, 0)
+
+        # import ipdb; ipdb.set_trace()
+        self.MI_csp = CSP()
+        csp_data_train = self.MI_csp.fit_transform(extra_epochs[train_idxs], extra_labels[train_idxs])
+        csp_data_test = self.MI_csp.transform(extra_epochs[test_idxs])
+
+        self.mi_csp_df_train = pd.DataFrame(csp_data_train)
+        self.mi_csp_df_train['target'] = extra_labels[train_idxs]
+        # self.mi_csp_df_train['target'] = self.mi_csp_df_train['target'].astype('int')
+        self.mi_csp_df_train['group'] = groups[train_idxs]
+
+        self.mi_csp_df_test = pd.DataFrame(csp_data_test)
+        self.mi_csp_df_test['target'] = extra_labels[test_idxs]
+        # self.mi_csp_df_test['target'] = self.mi_csp_df_test['target'].astype('int')
+        self.mi_csp_df_test['group'] = groups[test_idxs]
         
+        experiments_per_group = train_groups.shape[0] // num_groups
+        unique_train_groups = self.mi_csp_df_train['group'].unique()
+        group_idxs = []
+        for i in range(num_groups):
+            if i == num_groups - 1:  # if last group
+                experiments = unique_train_groups[i * experiments_per_group:]
+            else:
+                experiments = unique_train_groups[i * experiments_per_group:(i + 1) * experiments_per_group]
+            
+            group_idxs.append(self.mi_csp_df_train.loc[self.mi_csp_df_train['group'].isin(experiments)].index)
+        
+        for i, idxs in enumerate(group_idxs):
+            self.mi_csp_df_train.loc[idxs, 'group'] = i
+        
+        self.mi_csp_df_test['group'] = num_groups
+
+        self.mi_setup = pyclf.setup(data=self.mi_csp_df_train,
+                                    test_data=self.mi_csp_df_test,
+                                    target='target',
+                                    use_gpu=True,
+                                    fold_strategy='groupkfold',
+                                    fold_groups='group')
+        self.best_mi_clf = pyclf.compare_models(groups='group', fold=num_groups)
 
 
 def load_data(filename):
