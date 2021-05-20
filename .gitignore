@@ -1,5 +1,4 @@
 .vscode
-*.fif.gz
 *.pk
 
 # Byte-compiled / optimized / DLL files
