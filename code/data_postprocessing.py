@@ -75,7 +75,8 @@ class eegData:
         Takes MNE data object and tuple for bandpass filter range.
         """
         # bandpass filter
-        data.filter(*bandpass_range)
+        data = data.filter(*bandpass_range)
+        data = data.notch_filter(np.arange(60, 241, 60))
 
         # print(f'removing first {first_seconds_remove} seconds')
         data.crop(first_seconds_remove)
@@ -197,6 +198,7 @@ class eegData:
             except:
                print(f'no epochs found for {regexp}')
 
+
     def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=None):
         if channels is None:
             channels = self.viz_channels
@@ -256,6 +258,7 @@ class eegData:
             except:
                 print(f'no epochs found for {annot_regex}')
 
+
     def create_alpha_spectrograms(self, nperseg=2000, noverlap=1000, channels=None):
         """
         Create the false_epochs and true_epochs to be used in displaying an alpha wave spectrogram.
@@ -294,6 +297,26 @@ class eegData:
                 filename = 'saved_plot.png'
 
             plt.savefig(filename, dpi=300)
+
+
+    def plot_spectrograms_2d_comparison(self, spectrogram_data_1, spectrogram_data_2, labels, filename=None):
+        """
+        Compares spectrograms from two different epoch types.
+        """
+        frequencies = spectrogram_data_1[0].frequencies
+        avg_spec_1 = np.array([s.spectrograms.mean(axis=1) for s in spectrogram_data_1]).mean(axis=0)
+        avg_spec_2 = np.array([s.spectrograms.mean(axis=1) for s in spectrogram_data_2]).mean(axis=0)
+        f = plt.figure(figsize=(5.5, 5.5))
+        plt.plot(frequencies, avg_spec_1, label=labels[0])
+        plt.plot(frequencies, avg_spec_2, linestyle='--', label=labels[1])
+        plt.legend()
+        plt.xlim([0, 50])
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Intensity (a.u.)')
+        plt.tight_layout()
+        if filename is not None:
+            plt.savefig(filename, dpi=300)
+        plt.show()
 
 
     def plot_all_alpha_spectrograms(self, channels=None, reset_spectrograms=False, vmax=50):
@@ -422,14 +445,29 @@ class eegData:
 
     def fit_SSVEP_ML_and_report(self, num_groups=3, use_gpu=False):
         if self.SSVEP_test_df is None:
-            self.pycaret_setup = pyclf.setup(data=self.SSVEP_train_df, target='target', use_gpu=use_gpu, fold_strategy='groupkfold', fold_groups='group')
+            self.SSVEP_pycaret_setup = pyclf.setup(data=self.SSVEP_train_df,
+                                                    target='target',
+                                                    use_gpu=use_gpu,
+                                                    fold_strategy='groupkfold',
+                                                    fold_groups='group',
+                                                    fold=num_groups,
+                                                    silent=True)
         else:
-            self.pycaret_setup = pyclf.setup(data=self.SSVEP_train_df, test_data=self.SSVEP_test_df, target='target', use_gpu=use_gpu)#, fold_strategy='groupkfold', fold_groups='group')
+            self.SSVEP_pycaret_setup = pyclf.setup(data=self.SSVEP_train_df,
+                                                    test_data=self.SSVEP_test_df,
+                                                    target='target',
+                                                    use_gpu=use_gpu,
+                                                    fold_strategy='groupkfold',
+                                                    fold_groups='group',
+                                                    fold=num_groups,
+                                                    silent=True)
 
-        self.best_model = pyclf.compare_models(groups='group', fold=num_groups)
+        models = pyclf.models()
+        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        # now tune and select top model
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
+        self.best_SSVEP_clf = pyclf.compare_models(tuned, groups='group')
         self.SSVEP_score_grid = pyclf.pull()
-        # self.best_model = pyclf.save_model()
-        # print(self.best_model)
 
 
     def fit_motor_imagery_and_report(self, train_fraction=0.8, num_groups=3):
@@ -465,27 +503,20 @@ class eegData:
         unique_groups = np.unique(groups)
         np.random.shuffle(unique_groups)
         train_groups = np.random.choice(unique_groups, size=int(train_fraction * unique_groups.shape[0]))
-        # test_groups = np.array(set(unique_groups).difference(set(train_groups)))
         train_idxs = np.where(np.isin(groups, train_groups))
         test_idxs = np.where(np.isin(groups, train_groups, invert=True))
 
-        # transforms data into shape of (n_samples, n_channels) 
-        # arrays = [np.squeeze(arr, 0).T for arr in np.vsplit(epochs_data, epochs_data.shape[0])]
-        # all_data = np.concatenate(arrays, 0)
 
-        # import ipdb; ipdb.set_trace()
         self.MI_csp = CSP()
         csp_data_train = self.MI_csp.fit_transform(extra_epochs[train_idxs], extra_labels[train_idxs])
         csp_data_test = self.MI_csp.transform(extra_epochs[test_idxs])
 
         self.mi_csp_df_train = pd.DataFrame(csp_data_train)
         self.mi_csp_df_train['target'] = extra_labels[train_idxs]
-        # self.mi_csp_df_train['target'] = self.mi_csp_df_train['target'].astype('int')
         self.mi_csp_df_train['group'] = groups[train_idxs]
 
         self.mi_csp_df_test = pd.DataFrame(csp_data_test)
         self.mi_csp_df_test['target'] = extra_labels[test_idxs]
-        # self.mi_csp_df_test['target'] = self.mi_csp_df_test['target'].astype('int')
         self.mi_csp_df_test['group'] = groups[test_idxs]
         
         experiments_per_group = train_groups.shape[0] // num_groups
@@ -509,8 +540,255 @@ class eegData:
                                     target='target',
                                     use_gpu=True,
                                     fold_strategy='groupkfold',
-                                    fold_groups='group')
-        self.best_mi_clf = pyclf.compare_models(groups='group', fold=num_groups)
+                                    fold_groups='group',
+                                    fold=num_groups,
+                                    silent=True)
+        models = pyclf.models()
+        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        # now tune and select top model
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
+        self.best_mi_clf = pyclf.compare_models(tuned, groups='group')
+        self.mi_score_grid = pyclf.pull()
+
+
+    def fit_motor_actual_and_report(self, train_fraction=0.8, num_groups=3):
+        np.random.seed(42)
+        # True is 2, False 1
+        labels = self.MA_epochs.events[:, -1] == 2
+        # throw away last point so number of points is 5000
+        epochs_data = self.MA_epochs.get_data()[:, :, :-1]
+        # create extra expochs by splitting them into fifths
+        split_arrs = []
+        for i in range(epochs_data.shape[0]):
+            split_arrs.extend(np.split(epochs_data[i], 5, -1))
+        
+        extra_epochs = np.stack(split_arrs)
+        extra_labels = []
+        for l in labels:
+            extra_labels.extend([int(l)] * 5)
+        
+        extra_labels = np.array(extra_labels)
+
+        true_counter = 0
+        false_counter = 0
+        groups = []
+        for event in labels == 2:
+            if event is True:
+                groups.extend([true_counter] * 5)
+                true_counter += 1
+            else:
+                groups.extend([false_counter] * 5)
+                false_counter += 1
+        
+        groups = np.array(groups)
+        unique_groups = np.unique(groups)
+        np.random.shuffle(unique_groups)
+        train_groups = np.random.choice(unique_groups, size=int(train_fraction * unique_groups.shape[0]))
+        train_idxs = np.where(np.isin(groups, train_groups))
+        test_idxs = np.where(np.isin(groups, train_groups, invert=True))
+
+        self.MA_csp = CSP()
+        csp_data_train = self.MA_csp.fit_transform(extra_epochs[train_idxs], extra_labels[train_idxs])
+        csp_data_test = self.MA_csp.transform(extra_epochs[test_idxs])
+
+        self.ma_csp_df_train = pd.DataFrame(csp_data_train)
+        self.ma_csp_df_train['target'] = extra_labels[train_idxs]
+        self.ma_csp_df_train['group'] = groups[train_idxs]
+
+        self.ma_csp_df_test = pd.DataFrame(csp_data_test)
+        self.ma_csp_df_test['target'] = extra_labels[test_idxs]
+        self.ma_csp_df_test['group'] = groups[test_idxs]
+        
+        experiments_per_group = train_groups.shape[0] // num_groups
+        unique_train_groups = self.ma_csp_df_train['group'].unique()
+        group_idxs = []
+        for i in range(num_groups):
+            if i == num_groups - 1:  # if last group
+                experiments = unique_train_groups[i * experiments_per_group:]
+            else:
+                experiments = unique_train_groups[i * experiments_per_group:(i + 1) * experiments_per_group]
+            
+            group_idxs.append(self.ma_csp_df_train.loc[self.ma_csp_df_train['group'].isin(experiments)].index)
+        
+        for i, idxs in enumerate(group_idxs):
+            self.ma_csp_df_train.loc[idxs, 'group'] = i
+        
+        self.ma_csp_df_test['group'] = num_groups
+
+        self.ma_setup = pyclf.setup(data=self.ma_csp_df_train,
+                                    test_data=self.ma_csp_df_test,
+                                    target='target',
+                                    use_gpu=True,
+                                    fold_strategy='groupkfold',
+                                    fold_groups='group',
+                                    fold=num_groups,
+                                    silent=True)
+        models = pyclf.models()
+        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        # now tune and select top model
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
+        self.best_ma_clf = pyclf.compare_models(tuned, groups='group')
+        self.ma_score_grid = pyclf.pull()
+
+
+    def fit_laryngeal_actual_and_report(self, train_fraction=0.8, num_groups=3):
+        np.random.seed(42)
+        # True is 2, False 1
+        labels = self.LA_epochs.events[:, -1] == 2
+        # throw away last point so number of points is 5000
+        epochs_data = self.LA_epochs.get_data()[:, :, :-1]
+        # create extra expochs by splitting them into fifths
+        split_arrs = []
+        for i in range(epochs_data.shape[0]):
+            split_arrs.extend(np.split(epochs_data[i], 5, -1))
+        
+        extra_epochs = np.stack(split_arrs)
+        extra_labels = []
+        for l in labels:
+            extra_labels.extend([int(l)] * 5)
+        
+        extra_labels = np.array(extra_labels)
+
+        true_counter = 0
+        false_counter = 0
+        groups = []
+        for event in labels == 2:
+            if event is True:
+                groups.extend([true_counter] * 5)
+                true_counter += 1
+            else:
+                groups.extend([false_counter] * 5)
+                false_counter += 1
+        
+        groups = np.array(groups)
+        unique_groups = np.unique(groups)
+        np.random.shuffle(unique_groups)
+        train_groups = np.random.choice(unique_groups, size=int(train_fraction * unique_groups.shape[0]))
+        train_idxs = np.where(np.isin(groups, train_groups))
+        test_idxs = np.where(np.isin(groups, train_groups, invert=True))
+
+        self.LA_csp = CSP()
+        csp_data_train = self.LA_csp.fit_transform(extra_epochs[train_idxs], extra_labels[train_idxs])
+        csp_data_test = self.LA_csp.transform(extra_epochs[test_idxs])
+
+        self.la_csp_df_train = pd.DataFrame(csp_data_train)
+        self.la_csp_df_train['target'] = extra_labels[train_idxs]
+        self.la_csp_df_train['group'] = groups[train_idxs]
+
+        self.la_csp_df_test = pd.DataFrame(csp_data_test)
+        self.la_csp_df_test['target'] = extra_labels[test_idxs]
+        self.la_csp_df_test['group'] = groups[test_idxs]
+        
+        experiments_per_group = train_groups.shape[0] // num_groups
+        unique_train_groups = self.la_csp_df_train['group'].unique()
+        group_idxs = []
+        for i in range(num_groups):
+            if i == num_groups - 1:  # if last group
+                experiments = unique_train_groups[i * experiments_per_group:]
+            else:
+                experiments = unique_train_groups[i * experiments_per_group:(i + 1) * experiments_per_group]
+            
+            group_idxs.append(self.la_csp_df_train.loc[self.la_csp_df_train['group'].isin(experiments)].index)
+        
+        for i, idxs in enumerate(group_idxs):
+            self.la_csp_df_train.loc[idxs, 'group'] = i
+        
+        self.la_csp_df_test['group'] = num_groups
+
+        self.la_setup = pyclf.setup(data=self.la_csp_df_train,
+                                    test_data=self.la_csp_df_test,
+                                    target='target',
+                                    use_gpu=True,
+                                    fold_strategy='groupkfold',
+                                    fold_groups='group',
+                                    fold=num_groups,
+                                    silent=True)
+        models = pyclf.models()
+        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        # now tune and select top model
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
+        self.best_la_clf = pyclf.compare_models(tuned, groups='group')
+        self.la_score_grid = pyclf.pull()
+
+
+    def fit_laryngeal_imagery_and_report(self, train_fraction=0.8, num_groups=3):
+        np.random.seed(42)
+        # True is 2, False 1
+        labels = self.LI_epochs.events[:, -1] == 2
+        # throw away last point so number of points is 5000
+        epochs_data = self.LI_epochs.get_data()[:, :, :-1]
+        # create extra expochs by splitting them into fifths
+        split_arrs = []
+        for i in range(epochs_data.shape[0]):
+            split_arrs.extend(np.split(epochs_data[i], 5, -1))
+        
+        extra_epochs = np.stack(split_arrs)
+        extra_labels = []
+        for l in labels:
+            extra_labels.extend([int(l)] * 5)
+        
+        extra_labels = np.array(extra_labels)
+
+        true_counter = 0
+        false_counter = 0
+        groups = []
+        for event in labels == 2:
+            if event is True:
+                groups.extend([true_counter] * 5)
+                true_counter += 1
+            else:
+                groups.extend([false_counter] * 5)
+                false_counter += 1
+        
+        groups = np.array(groups)
+        unique_groups = np.unique(groups)
+        np.random.shuffle(unique_groups)
+        train_groups = np.random.choice(unique_groups, size=int(train_fraction * unique_groups.shape[0]))
+        train_idxs = np.where(np.isin(groups, train_groups))
+        test_idxs = np.where(np.isin(groups, train_groups, invert=True))
+
+        self.LI_csp = CSP()
+        csp_data_train = self.LI_csp.fit_transform(extra_epochs[train_idxs], extra_labels[train_idxs])
+        csp_data_test = self.LI_csp.transform(extra_epochs[test_idxs])
+
+        self.li_csp_df_train = pd.DataFrame(csp_data_train)
+        self.li_csp_df_train['target'] = extra_labels[train_idxs]
+        self.li_csp_df_train['group'] = groups[train_idxs]
+
+        self.li_csp_df_test = pd.DataFrame(csp_data_test)
+        self.li_csp_df_test['target'] = extra_labels[test_idxs]
+        self.li_csp_df_test['group'] = groups[test_idxs]
+        
+        experiments_per_group = train_groups.shape[0] // num_groups
+        unique_train_groups = self.li_csp_df_train['group'].unique()
+        group_idxs = []
+        for i in range(num_groups):
+            if i == num_groups - 1:  # if last group
+                experiments = unique_train_groups[i * experiments_per_group:]
+            else:
+                experiments = unique_train_groups[i * experiments_per_group:(i + 1) * experiments_per_group]
+            
+            group_idxs.append(self.li_csp_df_train.loc[self.li_csp_df_train['group'].isin(experiments)].index)
+        
+        for i, idxs in enumerate(group_idxs):
+            self.li_csp_df_train.loc[idxs, 'group'] = i
+        
+        self.li_csp_df_test['group'] = num_groups
+
+        self.li_setup = pyclf.setup(data=self.li_csp_df_train,
+                                    test_data=self.li_csp_df_test,
+                                    target='target',
+                                    use_gpu=True,
+                                    fold_strategy='groupkfold',
+                                    fold_groups='group',
+                                    fold=num_groups,
+                                    silent=True)
+        models = pyclf.models()
+        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        # now tune and select top model
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
+        self.best_li_clf = pyclf.compare_models(tuned, groups='group')
+        self.li_score_grid = pyclf.pull()
 
 
 def load_data(filename):
@@ -766,7 +1044,7 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50], v
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')
         plt.ylim(ylim)
-        plt.colorbar()
+        plt.colorbar(label='intensity (a.u.)')
         plt.tight_layout()
         if savefig:
             if filename is None:
@@ -816,18 +1094,6 @@ def setup_ssvep_spectrograms_for_ml(f1, f2, frequency_1=7, frequency_2=12, train
     return features, targets, max_train_indx
 
 
-def SVC(features, targets, max_train_indx, C=0.01):
-    """Does machine learning on data using a support vector classifier.
-    Parameters
-    ----------
-
-    """
-    svc = SVC(C=C)
-    svc.fit(features, targets)
-    print('training accuracy:', svc.score(features[: max_train_indx], targets[: max_train_indx]))
-    print('testing accuracy:', svc.score(features[max_train_indx :], targets[max_train_indx:]))
-
-
 def CSP_LDA(type, filename):
     """Does machine learning on data using common spatial patterns and Linear Discriminant Analysis.
     Parameters
@@ -846,7 +1112,8 @@ def CSP_LDA(type, filename):
     else:
         raw = load_data(filename)
 
-    raw.filter(7., 30., fir_design='firwin', skip_by_annotation='edge') # Do I need to keep this: skip_by_annotation='edge'
+    raw = raw.filter(7., 30., fir_design='firwin', skip_by_annotation='edge')
+    raw = raw.notch_filter(np.arange(60, 241, 60))
 
 
     event_id={'False-TMI-': 0, 'True-TMI-': 1}
