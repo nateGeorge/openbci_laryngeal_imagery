@@ -1148,7 +1148,7 @@ def run_experiment(debug=True, SSVEP_one_win=False):
 
     instructions(window)
     example(window)
-    n_trials = 2
+    n_trials = 10
     trials(window, n_trials, n_trials, n_trials, n_trials, n_trials, n_trials, data, debug=debug, SSVEP_one_win=SSVEP_one_win)
     # trials(window, 0, n_trials, 0, 0, 0, 0, data, debug=debug, SSVEP_one_win=SSVEP_one_win)
     window.close()
@@ -1156,5 +1156,5 @@ def run_experiment(debug=True, SSVEP_one_win=False):
 
 
 if __name__ == '__main__':
-    run_experiment(debug=True, SSVEP_one_win=False)
+    run_experiment(debug=False, SSVEP_one_win=False)
     core.quit()

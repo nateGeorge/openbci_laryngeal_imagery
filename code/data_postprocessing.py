@@ -330,13 +330,11 @@ class eegData:
         """
         Plot the SSVEP spectrograms
         """
-
-
+        if channels is None:
+            channels = self.viz_channels
 
         if self.SSVEP_spectrograms_false is None or reset_spectrograms:
             self.create_SSVEP_spectrograms(channels=channels)
-            if channels is None:
-                channels = self.viz_channels
 
         for i in range(len(self.SSVEP_spectrograms_false)):
             print("False SSVEP : " + str(i))
@@ -415,9 +413,9 @@ class eegData:
                 experiments = unique_groups[i * experiments_per_group:]
             else:
                 experiments = unique_groups[i * experiments_per_group:(i + 1) * experiments_per_group]
-
+            
             group_idxs.append(self.SSVEP_train_df.loc[self.SSVEP_train_df['group'].isin(experiments)].index)
-
+        
         for i, idxs in enumerate(group_idxs):
             self.SSVEP_train_df.loc[idxs, 'group'] = i
 
@@ -462,7 +460,6 @@ class eegData:
             else:
                 groups.extend([false_counter] * 5)
                 false_counter += 1
-<<<<<<< Updated upstream
         
         groups = np.array(groups)
         unique_groups = np.unique(groups)
@@ -514,16 +511,6 @@ class eegData:
                                     fold_strategy='groupkfold',
                                     fold_groups='group')
         self.best_mi_clf = pyclf.compare_models(groups='group', fold=num_groups)
-=======
-
-        self.csp_df = pd.DataFrame(csp_data)
-        self.csp_df['target'] = labels == 2
-        self.csp_df['group'] = groups
-
-        self.mi_setup = pyclf.setup(self.csp_df)
-        self.best_mi_clf = pyclf.compare_models()
-
->>>>>>> Stashed changes
 
 
 def load_data(filename):
@@ -786,7 +773,7 @@ def plot_spectrogram(ts, fs, spec, savefig=False, filename=None, ylim=[5, 50], v
                 filename = 'saved_plot.png'
 
             plt.savefig(filename, dpi=300)
-
+        
         plt.show()
 
 
