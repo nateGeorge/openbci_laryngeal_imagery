@@ -1077,6 +1077,8 @@ def instructions(window):
     instrctsTxt_3 = """Only after you have responded correctly will
     you respond again by following the instructions for indicating yes or no.
     """
+    instrctsTxt_4 = """WARNING: This experimental protocol contains flashing lights that may pose a danger to individuals who suffer from epilepsy. If you are dangerously sensitive to rapidly flashing lights, please stop the experiment now by pressing the 'x' key.
+    """
     instrct_stim = visual.TextStim(window, text=instrctsTxt_1)
     instrct_stim.draw()
     waitForArrow(window)
@@ -1084,6 +1086,9 @@ def instructions(window):
     instrct_stim.draw()
     waitForArrow(window)
     instrct_stim.text = instrctsTxt_3
+    instrct_stim.draw()
+    waitForArrow(window)
+    instrct_stim.text = instrctsTxt_4
     instrct_stim.draw()
     waitForArrow(window)
 
@@ -1156,5 +1161,5 @@ def run_experiment(debug=True, SSVEP_one_win=False):
 
 
 if __name__ == '__main__':
-    run_experiment(debug=True, SSVEP_one_win=False)
+    run_experiment(debug=False, SSVEP_one_win=False)
     core.quit()
