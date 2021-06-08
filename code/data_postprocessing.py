@@ -114,6 +114,7 @@ class eegData:
         Loads and cleans all current data.
         """
         filenames = [f for f in glob.glob(self.path + '*_raw.fif.gz')]
+        self.filenames = filenames
         list_of_data = []
         for f in filenames:
             data = self.load_data(f)
@@ -202,6 +203,8 @@ class eegData:
     def get_spectrograms(self, annotation_regexp, variable_for_storing_spectrogram, nperseg=2000, noverlap=1000, channels=None):
         if channels is None:
             channels = self.viz_channels
+        elif channels is 'all':
+            channels = self.data.ch_names
 
         epochs = self.get_epochs(annotation_regexp=annotation_regexp)
         spectData = []
@@ -342,33 +345,24 @@ class eegData:
         """
         Create the ssvep spectrograms
         """
-        if channels is None:
-            channels = self.viz_channels
-
         self.get_spectrograms('True-SSVEP-.*', 'SSVEP_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
         self.get_spectrograms('False-SSVEP-.*', 'SSVEP_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
 
 
-    def create_LMI_a_spectrograms(self, nperseg=2000, noverlap=1000, channels=None):
+    def create_LMI_a_spectrograms(self, nperseg=2000, noverlap=1000, channels='all'):
         """
         Create the laryngeal activity based spectrograms
         """
-        if channels is None:
-            channels = self.viz_channels
-
-        self.get_spectrograms('True-LMI-a.*', 'LMI_a_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
-        self.get_spectrograms('False-LMI-a.*', 'LMI_a_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
+        self.get_spectrograms('True-LMI-a-', 'LMI_a_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
+        self.get_spectrograms('False-LMI-a-', 'LMI_a_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
 
 
-    def create_LMI_i_spectrograms(self, nperseg=2000, noverlap=1000, channels=None):
+    def create_LMI_i_spectrograms(self, nperseg=2000, noverlap=1000, channels='all'):
         """
         Create the laryngeal activity based spectrograms
         """
-        if channels is None:
-            channels = self.viz_channels
-
-        self.get_spectrograms('True-LMI-i.*', 'LMI_i_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
-        self.get_spectrograms('True-LMI-i.*', 'LMI_i_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
+        self.get_spectrograms('True-LMI-i-', 'LMI_i_spectrograms_true', nperseg=nperseg, noverlap=noverlap, channels=channels)
+        self.get_spectrograms('False-LMI-i-', 'LMI_i_spectrograms_false', nperseg=nperseg, noverlap=noverlap, channels=channels)
 
 
     def plot_all_SSVEP_spectrograms(self, channels=None, reset_spectrograms=False, vmax=5):
@@ -390,7 +384,7 @@ class eegData:
             self.plot_spectrogram(self.SSVEP_spectrograms_true[i], vmax=vmax)
 
 
-    def prepare_SSVEP_data_for_ml(self, f1=None, f2=None, frequency_1=10, frequency_2=15, train_fraction=0.8, num_groups=3):
+    def prepare_SSVEP_data_for_ml(self, f1=None, f2=None, train_fraction=0.8, num_groups=3):
         np.random.seed(42)
         self.SSVEP_test_df = None
         if f1 is None or f2 is None:
@@ -408,8 +402,6 @@ class eegData:
                 f2_times.append(self.SSVEP_spectrograms_false[i].times)
                 f2_groups.append(len(self.SSVEP_spectrograms_false[i].times) * [i])
 
-            # f1 = spectrogramData(np.array(f1_spectrograms), np.array(f1_frequencies), np.array(f1_times))
-            # f2 = spectrogramData(np.array(f2_spectrograms), np.array(f2_frequencies), np.array(f2_times))
             f1 = spectrogramData(f1_spectrograms, f1_frequencies, f1_times)
             f2 = spectrogramData(f2_spectrograms, f2_frequencies, f2_times)
 
@@ -465,14 +457,14 @@ class eegData:
             self.SSVEP_train_df.loc[idxs, 'group'] = i
 
 
-    def prepare_LMI_a_data_for_ml(self, f1=None, f2=None, frequency_1=10, frequency_2=15, train_fraction=0.8, num_groups=3): #I don't think I need frequency_1 or frequency_2 in this function
+    def prepare_LMI_a_data_for_ml(self, f1=None, f2=None, train_fraction=0.8, num_groups=3):
         np.random.seed(42)
         self.LMI_a_test_df = None
         if f1 is None or f2 is None:
             if self.LMI_a_spectrograms_true is None:
                 self.create_LMI_a_spectrograms()
-            f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], [] #f1 and f2 here are meaningless except that f1 and f2 represent f1=false trials and f2=true trials
-            f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], [] #I thought f1 was false, but the below lines seem to show that f1 is being filled up with true trial spectrograms
+            f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], []
+            f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], []
             for i in range(len(self.LMI_a_spectrograms_false)):
                 f1_spectrograms.append(self.LMI_a_spectrograms_true[i].spectrograms)
                 f1_frequencies.append(self.LMI_a_spectrograms_true[i].frequencies)
@@ -507,22 +499,18 @@ class eegData:
         train_features = train_features.T
         train_targets = np.array([1] * train_f1s.shape[1] + [0] * train_f2s.shape[1])
         train_groups = np.concatenate((train_f1_groups, train_f2_groups))
+        self.LMI_a_train_df = pd.DataFrame(train_features)
+        self.LMI_a_train_df['target'] = train_targets
+        self.LMI_a_train_df['group'] = train_groups
         if train_fraction < 1:
             test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
             test_targets = np.array([1] * test_f1s.shape[1] + [0] * test_f2s.shape[1])
             test_groups = np.concatenate((test_f1_groups, test_f2_groups))
             test_features = test_features.T
+            self.LMI_a_test_df = pd.DataFrame(test_features)
+            self.LMI_a_test_df['target'] = test_targets
+            self.LMI_a_test_df['group'] = test_groups
 
-        self.LMI_a_train_df = pd.DataFrame(train_features)
-        self.LMI_a_train_df['target'] = train_targets
-        self.LMI_a_train_df['group'] = train_groups
-        # required for pycaret to work if targets are the actual frequencies
-        # self.SSVEP_train_df['target'] = self.SSVEP_train_df['target'].astype('category')
-        if train_fraction < 1:
-            self.LMI_a_train_df = pd.DataFrame(test_features)
-            self.LMI_a_train_df['target'] = test_targets
-            # self.SSVEP_test_df['target'] = self.SSVEP_test_df['target'].astype('category')
-            self.LMI_a_train_df['group'] = test_groups
 
         experiments_per_group = self.LMI_a_train_df['group'].unique().shape[0] // num_groups
         unique_groups = self.LMI_a_train_df['group'].unique()
@@ -541,14 +529,14 @@ class eegData:
 
 
 
-    def prepare_LMI_i_data_for_ml(self, f1=None, f2=None, frequency_1=10, frequency_2=15, train_fraction=0.8, num_groups=3): #I don't think I need frequency_1 or frequency_2 in this function
+    def prepare_LMI_i_data_for_ml(self, f1=None, f2=None, train_fraction=0.8, num_groups=3):
         np.random.seed(42)
         self.LMI_i_test_df = None
         if f1 is None or f2 is None:
             if self.LMI_i_spectrograms_true is None:
                 self.create_LMI_i_spectrograms()
-            f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], [] #f1 and f2 here are meaningless except that f1 and f2 represent f1=false trials and f2=true trials
-            f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], [] #I thought f1 was false, but the below lines seem to show that f1 is being filled up with true trial spectrograms
+            f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], []
+            f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], []
             for i in range(len(self.LMI_i_spectrograms_false)):
                 f1_spectrograms.append(self.LMI_i_spectrograms_true[i].spectrograms)
                 f1_frequencies.append(self.LMI_i_spectrograms_true[i].frequencies)
@@ -559,8 +547,6 @@ class eegData:
                 f2_times.append(self.LMI_i_spectrograms_false[i].times)
                 f2_groups.append(len(self.LMI_i_spectrograms_false[i].times) * [i])
 
-            f1 = spectrogramData(np.array(f1_spectrograms), np.array(f1_frequencies), np.array(f1_times))
-            f2 = spectrogramData(np.array(f2_spectrograms), np.array(f2_frequencies), np.array(f2_times))
             f1 = spectrogramData(f1_spectrograms, f1_frequencies, f1_times)
             f2 = spectrogramData(f2_spectrograms, f2_frequencies, f2_times)
 
@@ -583,22 +569,17 @@ class eegData:
         train_features = train_features.T
         train_targets = np.array([1] * train_f1s.shape[1] + [0] * train_f2s.shape[1])
         train_groups = np.concatenate((train_f1_groups, train_f2_groups))
+        self.LMI_i_train_df = pd.DataFrame(train_features)
+        self.LMI_i_train_df['target'] = train_targets
+        self.LMI_i_train_df['group'] = train_groups
         if train_fraction < 1:
             test_features = np.concatenate((test_f1s, test_f2s), axis=-1)
             test_targets = np.array([1] * test_f1s.shape[1] + [0] * test_f2s.shape[1])
             test_groups = np.concatenate((test_f1_groups, test_f2_groups))
             test_features = test_features.T
-
-        self.LMI_i_train_df = pd.DataFrame(train_features)
-        self.LMI_i_train_df['target'] = train_targets
-        self.LMI_i_train_df['group'] = train_groups
-        # required for pycaret to work if targets are the actual frequencies
-        # self.SSVEP_train_df['target'] = self.SSVEP_train_df['target'].astype('category')
-        if train_fraction < 1:
-            self.LMI_i_train_df = pd.DataFrame(test_features)
-            self.LMI_i_train_df['target'] = test_targets
-            # self.SSVEP_test_df['target'] = self.SSVEP_test_df['target'].astype('category')
-            self.LMI_i_train_df['group'] = test_groups
+            self.LMI_i_test_df = pd.DataFrame(test_features)
+            self.LMI_i_test_df['target'] = test_targets
+            self.LMI_i_test_df['group'] = test_groups
 
         experiments_per_group = self.LMI_i_train_df['group'].unique().shape[0] // num_groups
         unique_groups = self.LMI_i_train_df['group'].unique()
@@ -616,93 +597,88 @@ class eegData:
             self.LMI_i_train_df.loc[idxs, 'group'] = i
 
 
-# ********************************************************************************************   Stopped Working here   **********************************************************************************************************************************
-
     def fit_LMI_a_ML_and_report(self, num_groups=3, use_gpu=False):
-        if self.LMI_a_train_df is None:
-            self.LMI_a_pycaret_setup = pyclf.setup(data=self.LMI_a_train_df,
+        groups = self.LMI_a_train_df.group
+        if self.LMI_a_test_df is None:
+            self.LMI_a_pycaret_setup = pyclf.setup(data=self.LMI_a_train_df.drop('group', axis=1),
                                                     target='target',
                                                     use_gpu=use_gpu,
                                                     fold_strategy='groupkfold',
-                                                    fold_groups='group',
+                                                    fold_groups=groups,
                                                     fold=num_groups,
                                                     silent=True)
         else:
-            self.LMI_a_pycaret_setup = pyclf.setup(data=self.LMI_a_train_df,
-                                                    test_data=self.LMI_a_test_df,
+            self.LMI_a_pycaret_setup = pyclf.setup(data=self.LMI_a_train_df.drop('group', axis=1),
+                                                    test_data=self.LMI_a_test_df.drop('group', axis=1),
                                                     target='target',
                                                     use_gpu=use_gpu,
                                                     fold_strategy='groupkfold',
-                                                    fold_groups='group',
+                                                    fold_groups=groups,
                                                     fold=num_groups,
                                                     silent=True)
 
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        fit_models = pyclf.compare_models(groups=groups, n_select=models.shape[0])
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_LMI_a_clf = pyclf.compare_models(tuned, groups='group')
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        self.best_LMI_a_clf = pyclf.compare_models(tuned, groups=groups)
         self.LMI_a_score_grid = pyclf.pull()
 
 
-
     def fit_LMI_i_ML_and_report(self, num_groups=3, use_gpu=False):
-        if self.LMI_i_train_df is None:
-            self.LMI_i_pycaret_setup = pyclf.setup(data=self.LMI_i_train_df,
+        groups = self.LMI_i_train_df.group
+        if self.LMI_i_test_df is None:
+            self.LMI_i_pycaret_setup = pyclf.setup(data=self.LMI_i_train_df.drop('group', axis=1),
                                                     target='target',
                                                     use_gpu=use_gpu,
                                                     fold_strategy='groupkfold',
-                                                    fold_groups='group',
+                                                    fold_groups=groups,
                                                     fold=num_groups,
                                                     silent=True)
         else:
-            self.LMI_i_pycaret_setup = pyclf.setup(data=self.LMI_i_train_df,
-                                                    test_data=self.LMI_i_test_df,
+            self.LMI_i_pycaret_setup = pyclf.setup(data=self.LMI_i_train_df.drop('group', axis=1),
+                                                    test_data=self.LMI_i_test_df.drop('group', axis=1),
                                                     target='target',
                                                     use_gpu=use_gpu,
                                                     fold_strategy='groupkfold',
-                                                    fold_groups='group',
+                                                    fold_groups=groups,
                                                     fold=num_groups,
                                                     silent=True)
 
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        fit_models = pyclf.compare_models(groups=groups, n_select=models.shape[0])
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_LMI_i_clf = pyclf.compare_models(tuned, groups='group')
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        self.best_LMI_i_clf = pyclf.compare_models(tuned, groups=groups)
         self.LMI_i_score_grid = pyclf.pull()
 
 
-
     def fit_SSVEP_ML_and_report(self, num_groups=3, use_gpu=False):
+        groups = self.SSVEP_train_df.group
         if self.SSVEP_test_df is None:
-            self.SSVEP_pycaret_setup = pyclf.setup(data=self.SSVEP_train_df,
+            self.SSVEP_pycaret_setup = pyclf.setup(data=self.SSVEP_train_df.drop('group', axis=1),
                                                     target='target',
                                                     use_gpu=use_gpu,
                                                     fold_strategy='groupkfold',
-                                                    fold_groups='group',
+                                                    fold_groups=groups,
                                                     fold=num_groups,
                                                     silent=True)
         else:
-            self.SSVEP_pycaret_setup = pyclf.setup(data=self.SSVEP_train_df,
-                                                    test_data=self.SSVEP_test_df,
+            self.SSVEP_pycaret_setup = pyclf.setup(data=self.SSVEP_train_df.drop('group', axis=1),
+                                                    test_data=self.SSVEP_test_df.drop('group', axis=1),
                                                     target='target',
                                                     use_gpu=use_gpu,
                                                     fold_strategy='groupkfold',
-                                                    fold_groups='group',
+                                                    fold_groups=groups,
                                                     fold=num_groups,
                                                     silent=True)
 
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        fit_models = pyclf.compare_models(groups=groups, n_select=models.shape[0])
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_SSVEP_clf = pyclf.compare_models(tuned, groups='group')
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        self.best_SSVEP_clf = pyclf.compare_models(tuned, groups=groups)
         self.SSVEP_score_grid = pyclf.pull()
-
-
-
-
 
 
     def fit_motor_imagery_and_report(self, train_fraction=0.8, num_groups=3):
@@ -770,19 +746,20 @@ class eegData:
 
         self.mi_csp_df_test['group'] = num_groups
 
-        self.mi_setup = pyclf.setup(data=self.mi_csp_df_train,
-                                    test_data=self.mi_csp_df_test,
+        groups = self.mi_csp_df_train.group
+        self.mi_setup = pyclf.setup(data=self.mi_csp_df_train.drop('group', axis=1),
+                                    test_data=self.mi_csp_df_test.drop('group', axis=1),
                                     target='target',
                                     use_gpu=True,
                                     fold_strategy='groupkfold',
-                                    fold_groups='group',
+                                    fold_groups=groups,
                                     fold=num_groups,
                                     silent=True)
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        fit_models = pyclf.compare_models(groups=groups, n_select=models.shape[0])
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_mi_clf = pyclf.compare_models(tuned, groups='group')
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        self.best_mi_clf = pyclf.compare_models(tuned, groups=groups)
         self.mi_score_grid = pyclf.pull()
 
 
@@ -850,19 +827,20 @@ class eegData:
 
         self.ma_csp_df_test['group'] = num_groups
 
-        self.ma_setup = pyclf.setup(data=self.ma_csp_df_train,
-                                    test_data=self.ma_csp_df_test,
+        groups = self.ma_csp_df_train.group
+        self.ma_setup = pyclf.setup(data=self.ma_csp_df_train.drop('group', axis=1),
+                                    test_data=self.ma_csp_df_test.drop('group', axis=1),
                                     target='target',
                                     use_gpu=True,
                                     fold_strategy='groupkfold',
-                                    fold_groups='group',
+                                    fold_groups=groups,
                                     fold=num_groups,
                                     silent=True)
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        fit_models = pyclf.compare_models(n_select=models.shape[0], groups=groups)
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_ma_clf = pyclf.compare_models(tuned, groups='group')
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        self.best_ma_clf = pyclf.compare_models(tuned, groups=groups)
         self.ma_score_grid = pyclf.pull()
 
 
@@ -930,19 +908,20 @@ class eegData:
 
         self.la_csp_df_test['group'] = num_groups
 
-        self.la_setup = pyclf.setup(data=self.la_csp_df_train,
-                                    test_data=self.la_csp_df_test,
+        groups = self.la_csp_df_train.group
+        self.la_setup = pyclf.setup(data=self.la_csp_df_train.drop('group', axis=1),
+                                    test_data=self.la_csp_df_test.drop('group', axis=1),
                                     target='target',
                                     use_gpu=True,
                                     fold_strategy='groupkfold',
-                                    fold_groups='group',
+                                    fold_groups=groups,
                                     fold=num_groups,
                                     silent=True)
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        self.best_la_clf = pyclf.compare_models(groups=groups)#, n_select=models.shape[0])
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_la_clf = pyclf.compare_models(tuned, groups='group')
+        # tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        # self.best_la_clf = pyclf.compare_models(tuned, groups=groups)
         self.la_score_grid = pyclf.pull()
 
 
@@ -1009,20 +988,20 @@ class eegData:
             self.li_csp_df_train.loc[idxs, 'group'] = i
 
         self.li_csp_df_test['group'] = num_groups
-
-        self.li_setup = pyclf.setup(data=self.li_csp_df_train,
-                                    test_data=self.li_csp_df_test,
+        groups = self.li_csp_df_train.group
+        self.li_setup = pyclf.setup(data=self.li_csp_df_train.drop('group', axis=1),
+                                    test_data=self.li_csp_df_test.drop('group', axis=1),
                                     target='target',
                                     use_gpu=True,
                                     fold_strategy='groupkfold',
-                                    fold_groups='group',
+                                    fold_groups=groups,
                                     fold=num_groups,
                                     silent=True)
         models = pyclf.models()
-        fit_models = pyclf.compare_models(groups='group', n_select=models.shape[0])
+        fit_models = pyclf.compare_models(groups=groups, n_select=models.shape[0])
         # now tune and select top model
-        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups='group') for model in fit_models]
-        self.best_li_clf = pyclf.compare_models(tuned, groups='group')
+        tuned = [pyclf.tune_model(model, search_library='scikit-optimize', groups=groups) for model in fit_models]
+        self.best_li_clf = pyclf.compare_models(tuned, groups=groups)
         self.li_score_grid = pyclf.pull()
 
 
