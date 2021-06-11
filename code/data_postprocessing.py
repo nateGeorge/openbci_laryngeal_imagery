@@ -385,6 +385,8 @@ class eegData:
 
 
     def prepare_SSVEP_data_for_ml(self, f1=None, f2=None, train_fraction=0.8, num_groups=3):
+        # indices for trimming data; frequencies are in 0.5Hz increments from 0 to 500
+        freq_idxs = (10, 101)
         np.random.seed(42)
         self.SSVEP_test_df = None
         if f1 is None or f2 is None:
@@ -393,12 +395,12 @@ class eegData:
             f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], []
             f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], []
             for i in range(len(self.SSVEP_spectrograms_false)):
-                f1_spectrograms.append(self.SSVEP_spectrograms_true[i].spectrograms)
-                f1_frequencies.append(self.SSVEP_spectrograms_true[i].frequencies)
+                f1_spectrograms.append(self.SSVEP_spectrograms_true[i].spectrograms[freq_idxs[0]:freq_idxs[1]])
+                f1_frequencies.append(self.SSVEP_spectrograms_true[i].frequencies[freq_idxs[0]:freq_idxs[1]])
                 f1_times.append(self.SSVEP_spectrograms_true[i].times)
                 f1_groups.append(len(self.SSVEP_spectrograms_true[i].times) * [i])
-                f2_spectrograms.append(self.SSVEP_spectrograms_false[i].spectrograms)
-                f2_frequencies.append(self.SSVEP_spectrograms_false[i].frequencies)
+                f2_spectrograms.append(self.SSVEP_spectrograms_false[i].spectrograms[freq_idxs[0]:freq_idxs[1]])
+                f2_frequencies.append(self.SSVEP_spectrograms_false[i].frequencies[freq_idxs[0]:freq_idxs[1]])
                 f2_times.append(self.SSVEP_spectrograms_false[i].times)
                 f2_groups.append(len(self.SSVEP_spectrograms_false[i].times) * [i])
 
@@ -458,6 +460,8 @@ class eegData:
 
 
     def prepare_LMI_a_data_for_ml(self, f1=None, f2=None, train_fraction=0.8, num_groups=3):
+        # indices for trimming data; frequencies are in 0.5Hz increments from 0 to 500
+        freq_idxs = (10, 101)
         np.random.seed(42)
         self.LMI_a_test_df = None
         if f1 is None or f2 is None:
@@ -466,12 +470,12 @@ class eegData:
             f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], []
             f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], []
             for i in range(len(self.LMI_a_spectrograms_false)):
-                f1_spectrograms.append(self.LMI_a_spectrograms_true[i].spectrograms)
-                f1_frequencies.append(self.LMI_a_spectrograms_true[i].frequencies)
+                f1_spectrograms.append(self.LMI_a_spectrograms_true[i].spectrograms[freq_idxs[0]:freq_idxs[1]])
+                f1_frequencies.append(self.LMI_a_spectrograms_true[i].frequencies[freq_idxs[0]:freq_idxs[1]])
                 f1_times.append(self.LMI_a_spectrograms_true[i].times)
                 f1_groups.append(len(self.LMI_a_spectrograms_true[i].times) * [i])
-                f2_spectrograms.append(self.LMI_a_spectrograms_false[i].spectrograms)
-                f2_frequencies.append(self.LMI_a_spectrograms_false[i].frequencies)
+                f2_spectrograms.append(self.LMI_a_spectrograms_false[i].spectrograms[freq_idxs[0]:freq_idxs[1]])
+                f2_frequencies.append(self.LMI_a_spectrograms_false[i].frequencies[freq_idxs[0]:freq_idxs[1]])
                 f2_times.append(self.LMI_a_spectrograms_false[i].times)
                 f2_groups.append(len(self.LMI_a_spectrograms_false[i].times) * [i])
 
@@ -528,8 +532,9 @@ class eegData:
             self.LMI_a_train_df.loc[idxs, 'group'] = i
 
 
-
     def prepare_LMI_i_data_for_ml(self, f1=None, f2=None, train_fraction=0.8, num_groups=3):
+        # indices for trimming data; frequencies are in 0.5Hz increments from 0 to 500
+        freq_idxs = (10, 101)
         np.random.seed(42)
         self.LMI_i_test_df = None
         if f1 is None or f2 is None:
@@ -538,12 +543,12 @@ class eegData:
             f1_spectrograms, f1_frequencies, f1_times, f1_groups = [], [], [], []
             f2_spectrograms, f2_frequencies, f2_times, f2_groups = [], [], [], []
             for i in range(len(self.LMI_i_spectrograms_false)):
-                f1_spectrograms.append(self.LMI_i_spectrograms_true[i].spectrograms)
-                f1_frequencies.append(self.LMI_i_spectrograms_true[i].frequencies)
+                f1_spectrograms.append(self.LMI_i_spectrograms_true[i].spectrograms[freq_idxs[0]:freq_idxs[1]])
+                f1_frequencies.append(self.LMI_i_spectrograms_true[i].frequencies[freq_idxs[0]:freq_idxs[1]])
                 f1_times.append(self.LMI_i_spectrograms_true[i].times)
                 f1_groups.append(len(self.LMI_i_spectrograms_true[i].times) * [i])
-                f2_spectrograms.append(self.LMI_i_spectrograms_false[i].spectrograms)
-                f2_frequencies.append(self.LMI_i_spectrograms_false[i].frequencies)
+                f2_spectrograms.append(self.LMI_i_spectrograms_false[i].spectrograms[freq_idxs[0]:freq_idxs[1]])
+                f2_frequencies.append(self.LMI_i_spectrograms_false[i].frequencies[freq_idxs[0]:freq_idxs[1]])
                 f2_times.append(self.LMI_i_spectrograms_false[i].times)
                 f2_groups.append(len(self.LMI_i_spectrograms_false[i].times) * [i])
 
