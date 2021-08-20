@@ -9,11 +9,9 @@ from colorama import Fore, Style
 
 # from brainflow.board_shim import BoardShim, BrainFlowInputParams
 
-
-
 class experiment():
     def __init__(self):
-        pass
+        self.slides = []
     def start_exp(self, exit_after=True, pKey='p', escKey='escape'):
         self.win = visual.Window()
         self.pKey = pKey
@@ -25,6 +23,23 @@ class experiment():
             self.win.close()
         return self.win
 
+    def close_exp(self, check=False):
+        if check:
+            text = visual.TextStim(win=self.win, text="Are you sure you want to close the program? \n(y/n)")
+            text.draw()
+            self.win.flip()
+            while True:
+                self.keys = getKeys()
+                if len(self.keys) > 0:
+                    print(self.keys)
+                if "y" in self.keys or "n" in self.keys:
+                    if "y" in self.keys:
+                        print('Goodbye... for now.')
+                        self.win.close()
+                        core.quit()
+                        sys.exit()
+                    if "n" in self.keys:
+                        return
 
     def pause(self, end_sect=False):
         pKey = self.pKey
@@ -44,9 +59,7 @@ class experiment():
             if pKey in self.keys:
                 break
             if escKey in self.keys:
-                print('Goodbye... for now.')
-                self.win.close()
-                core.quit()
+                self.close_exp(check=True)
 
 
     def listen_for(self, find=[], wait=-1):
@@ -55,8 +68,7 @@ class experiment():
         if wait >= 0:
             for i in range(wait):
                 self.keys = getKeys()
-                print(self.keys)
-                print(i)
+                print(str(i) + ": " + str(self.keys))
                 time.sleep(1)
                 found = []
                 for f in find:
@@ -65,9 +77,7 @@ class experiment():
                 for f in found:
                     print(f)
                     if f == self.escKey:
-                        print('Goodbye... for now.')
-                        self.win.close()
-                        core.quit()
+                        self.close_exp(check=True)
                     if f == self.pKey:
                         EXP.pause()
             # Maybe flip window here (this is after you've waited wait seconds)
@@ -75,6 +85,8 @@ class experiment():
             i=0
             while True:
                 self.keys = getKeys()
+                if len(self.keys) > 0:
+                    print(self.keys)
                 if i % 200000 == 0:
                     print('...')
                 found = []
@@ -84,9 +96,7 @@ class experiment():
                 for f in found:
                     print(self.keys)
                     if f == self.escKey:
-                        print('Goodbye... for now.')
-                        self.win.close()
-                        core.quit()
+                        self.close_exp(check=True)
                     if f == self.pKey:
                         EXP.pause()
                 i+=1
@@ -99,14 +109,14 @@ class experiment():
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=5)
+            self.listen_for(find=[escKey, pKey])
             EXP.pause(end_sect=True)
         if section == 'ssvep':
             self.curSec = 'ssvep'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=[escKey, pKey])
             EXP.pause(end_sect=True)
         if section == 'mi-a':
             self.curSec = 'mi-a'
@@ -163,9 +173,8 @@ pKey = 'p' # pause key
 escKey = 'escape'
 EXP = experiment()
 EXP.start_exp(exit_after=exit_after, pKey=pKey, escKey=escKey)
-# EXP.listen_for(find=[escKey, pKey])
 EXP.run_section('prexp')
-EXP.run_section('ssvep')
+# EXP.run_section('ssvep')
 
 if not exit_after:
     EXP.win.close()
