@@ -61,10 +61,11 @@ class slide():
 class experiment():
     def __init__(self):
         self.slides = []
-    def start_exp(self, exit_after=True, pKey='p', escKey='escape'):
+    def start_exp(self, exit_after=True, pKey='p', escKey='escape', fwdKey='right'):
         self.win = visual.Window()
         self.pKey = pKey
         self.escKey = escKey
+        self.fwdKey = fwdKey
         if exit_after:
             for i in range(6):
                 print(i)
@@ -115,6 +116,7 @@ class experiment():
     def listen_for(self, find=[], wait=-1):
         print('Press ' + self.escKey + ' to quit')
         print('Press ' + self.pKey + ' to pause')
+        print('Press ' + self.fwdKey + ' to move forward ')
         if wait >= 0:
             for i in range(wait):
                 self.keys = getKeys()
@@ -144,71 +146,66 @@ class experiment():
                     if f in self.keys:
                         found.append(f)
                 for f in found:
-                    print(self.keys)
                     if f == self.escKey:
                         self.close_exp(check=True)
                     if f == self.pKey:
                         EXP.pause()
+                    if f == self.fwdKey:
+                        return
                 i+=1
 
-    def run_section(self, section='prexp'):
+    def run_section(self, section='prexp', wait=-1):
         self.win.flip() # clear window before each new section
+        self.curSec = section
+        keys = [escKey, pKey]
 
         if section == 'prexp':
-            self.curSec = 'prexp'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey])
+            self.listen_for(find=keys + [fwdKey], wait=wait)
             EXP.pause(end_sect=True)
         if section == 'ssvep':
-            self.curSec = 'ssvep'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey])
+            self.listen_for(find=keys + [fwdKey], wait=wait)
             EXP.pause(end_sect=True)
         if section == 'mi-a':
-            self.curSec = 'mi-a'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=keys, wait=wait)
             EXP.pause(end_sect=True)
         if section == 'mi-i':
-            self.curSec = 'mi-i'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=keys, wait=wait)
             EXP.pause(end_sect=True)
         if section == 'lmi-abs-a':
-            self.curSec = 'lmi-abs-a'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=keys, wait=wait)
             EXP.pause(end_sect=True)
         if section == 'lmi-abs-i':
-            self.curSec = 'lmi--abs-i'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=keys, wait=wait)
             EXP.pause(end_sect=True)
         if section == 'lmi-pitch-a':
-            self.curSec = 'lmi--pitch-a'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=keys, wait=wait)
             EXP.pause(end_sect=True)
         if section == 'lmi-pitch-i':
-            self.curSec = 'lmi--pitch-i'
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=[escKey, pKey], wait=1)
+            self.listen_for(find=keys, wait=wait)
             EXP.pause(end_sect=True)
 
 
@@ -221,8 +218,9 @@ class experiment():
 exit_after=False
 pKey = 'p' # pause key
 escKey = 'escape'
+fwdKey = 'right'
 EXP = experiment()
-EXP.start_exp(exit_after=exit_after, pKey=pKey, escKey=escKey)
+EXP.start_exp(exit_after=exit_after, pKey=pKey, escKey=escKey, fwdKey=fwdKey)
 EXP.run_section('prexp')
 EXP.run_section('ssvep')
 
