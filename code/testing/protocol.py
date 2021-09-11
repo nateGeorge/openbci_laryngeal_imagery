@@ -222,16 +222,16 @@ pKey = 'p' # pause key
 escKey = 'escape'
 EXP = experiment()
 EXP.start_exp(exit_after=exit_after, pKey=pKey, escKey=escKey)
-# EXP.run_section('prexp')
-# # EXP.run_section('ssvep')#
+EXP.run_section('prexp')
+EXP.run_section('ssvep')
 
 
-slides = []
-slides.append(slide(texts= [("Hey, did I do the thing?",(-.5,0)),
-                            ("Hey did I do a second thing?",(.5, 0))
-                                ], elph_box=-1))
-slides[0].make_stims()
-slides[0].show_slide(EXP)
+# slides = []
+# slides.append(slide(texts= [("Hey, did I do the thing?",(-.5,0)),
+#                             ("Hey did I do a second thing?",(.5, 0))
+#                                 ], elph_box=-1))
+# slides[0].make_stims()
+# slides[0].show_slide(EXP)
 
 if not exit_after:
     EXP.win.close()
