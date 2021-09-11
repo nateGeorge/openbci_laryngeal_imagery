@@ -88,6 +88,7 @@ class experiment():
                         core.quit()
                         sys.exit()
                     if "n" in self.keys:
+                        self.win.flip()
                         return
 
     def pause(self, end_sect=False):
