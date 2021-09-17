@@ -7,6 +7,8 @@ from psychopy.event import Mouse, getKeys
 import colorama
 from colorama import Fore, Style
 
+from brainflow.board_shim import BoardShim, BrainFlowInputParams
+
 # from brainflow.board_shim import BoardShim, BrainFlowInputParams
 
 class slide():
@@ -214,23 +216,69 @@ class experiment():
 
 
 
-
+# offline configuration
 exit_after=False
 pKey = 'p' # pause key
 escKey = 'escape'
 fwdKey = 'right'
 EXP = experiment()
+
+
+
+
+
+
+#connect to headset
+brd = "Synthetic"
+
+params = BrainFlowInputParams()
+
+# cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
+# bluetooth is 2
+if brd == "WiFi":
+    params.ip_address = '192.168.4.1'#'10.0.0.220'
+    params.ip_port = 6229
+    board = BoardShim(6, params)
+    EXP.sfreq = 1000
+elif brd == "Synthetic":
+    board = BoardShim(-1, params)
+    EXP.sfreq = 250
+elif brd == "Bluetooth":
+    params.serial_port = serialPort
+    board = BoardShim(2, params)
+    EXP.sfreq = 125
+
+board.prepare_session()
+# by default stores 7.5 minutes of data; change num_samples higher for more
+# sampling rate of 1k/s, so 450k samples in buffer
+board.start_stream()
+time.sleep(4)
+EXP.board = board
+
+# stop the session
+time.sleep(3)
+rawData = EXP.board.get_board_data()
+EXP.board.stop_stream()
+# this is for disconnecting the headset
+EXP.board.release_session()
+
+
+
+
+
+
+# experiment
 EXP.start_exp(exit_after=exit_after, pKey=pKey, escKey=escKey, fwdKey=fwdKey)
 EXP.run_section('prexp')
 EXP.run_section('ssvep')
 
-
-# slides = []
-# slides.append(slide(texts= [("Hey, did I do the thing?",(-.5,0)),
-#                             ("Hey did I do a second thing?",(.5, 0))
-#                                 ], elph_box=-1))
-# slides[0].make_stims()
-# slides[0].show_slide(EXP)
+#slide testing (not necessary once run_section works)
+slides = []
+slides.append(slide(texts= [("Hey, did I do the thing?",(-.5,0)),
+                            ("Hey did I do a second thing?",(.5, 0))
+                                ], elph_box=-1))
+slides[0].make_stims()
+slides[0].show_slide(EXP)
 
 if not exit_after:
     EXP.win.close()
