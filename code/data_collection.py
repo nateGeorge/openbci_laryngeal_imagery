@@ -60,7 +60,7 @@ class expData:
     expDate : obj
         A datetime.date object which stores the date.
     participantID : int
-        An int containing the participant's.
+        An int containing the participant's ID.
     descriptions : bool
         A boolean to represent yes or no; True equals yes.
     label : str
