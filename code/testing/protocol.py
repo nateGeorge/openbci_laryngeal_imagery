@@ -75,6 +75,35 @@ class experiment():
             self.win.close()
         return self.win
 
+    def connect_bci(self, brd):
+        
+        #connect to headset
+        brd = "Synthetic"
+
+        params = BrainFlowInputParams()
+
+        # cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
+        # bluetooth is 2
+        if brd == "WiFi":
+            params.ip_address = '192.168.4.1'#'10.0.0.220'
+            params.ip_port = 6229
+            board = BoardShim(6, params)
+            self.sfreq = 1000
+        elif brd == "Synthetic":
+            board = BoardShim(-1, params)
+            self.sfreq = 250
+        elif brd == "Bluetooth":
+            params.serial_port = serialPort
+            board = BoardShim(2, params)
+            self.sfreq = 125
+
+        board.prepare_session()
+        # by default stores 7.5 minutes of data; change num_samples higher for more
+        # sampling rate of 1k/s, so 450k samples in buffer
+        board.start_stream()
+        time.sleep(4)
+        self.board = board
+
     def close_exp(self, check=False):
         if check:
             text = visual.TextStim(win=self.win, text="Are you sure you want to close the program? \n(y/n)")
@@ -223,37 +252,8 @@ escKey = 'escape'
 fwdKey = 'right'
 EXP = experiment()
 
-
-
-
-
-
-#connect to headset
-brd = "Synthetic"
-
-params = BrainFlowInputParams()
-
-# cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
-# bluetooth is 2
-if brd == "WiFi":
-    params.ip_address = '192.168.4.1'#'10.0.0.220'
-    params.ip_port = 6229
-    board = BoardShim(6, params)
-    EXP.sfreq = 1000
-elif brd == "Synthetic":
-    board = BoardShim(-1, params)
-    EXP.sfreq = 250
-elif brd == "Bluetooth":
-    params.serial_port = serialPort
-    board = BoardShim(2, params)
-    EXP.sfreq = 125
-
-board.prepare_session()
-# by default stores 7.5 minutes of data; change num_samples higher for more
-# sampling rate of 1k/s, so 450k samples in buffer
-board.start_stream()
-time.sleep(4)
-EXP.board = board
+# connect headset
+EXP.connect_bci()
 
 # stop the session
 time.sleep(3)
