@@ -7,9 +7,14 @@ from psychopy.event import Mouse, getKeys
 import colorama
 from colorama import Fore, Style
 
+import mne
+import pickle
+from brainflow.board_shim import BoardShim, BrainFlowInputParams
+from PyQt5 import QtCore
+
 # from brainflow.board_shim import BoardShim, BrainFlowInputParams
 
-class slide():
+class slide:
 # An object for handling all psychopy objects for one slide
     def __init__(self, texts=[], imgs=[], elph_box=-1):
         # texts and imgs elements should be tuples of (text/img_url, position, and size) i.e. ("text/img_url", (0,0), 0.5)
@@ -56,9 +61,188 @@ class slide():
         EXP.win.flip()
         time.sleep(2)
 
+class expData:
+    """ This is a class to store the important information about the experiment for when the experiment is over.
+
+    Attributes
+    ----------
+    rawEEG : obj
+        An mne object that stores the raw EEG data.
+    expDate : obj
+        A datetime.date object which stores the date.
+    participantID : int
+        An int containing the participant's ID.
+    descriptions : bool
+        A boolean to represent yes or no; True equals yes.
+    label : str
+        A string describing the type of trial.
+            "Alpha" - for alpha wave detection
+            "S" - for SSVEP
+            "TMI-a" - for motor activity (actual)
+            "TMI-i" - for traditional motor imagery (imagined)
+            "LMI-a" - for laryngeal activity (actual)
+            "LMI-i" - for laryngeal motor imagery (imagined)
+    """
+    def __init__(self):
+        #create parameters required in the init function which record the following
+        #important times
+        #the eeg data
+        #the date and time
+        self.dataTrials = []
+        self.frstOnset = None
+        self.ID = None
+
+    def addTrial(self, onset, duration, description, label):
+        if hasattr(self, "dataTrials") != True:
+            print("created first trial in dataTrials")
+            self.dataTrials = [trialData(onset, duration, description, label)]
+        else:
+            print("appended dataTrials")
+            self.dataTrials.append(trialData(onset, duration, description, label))
+
+    def addFrstOnset(self, frstOnset):
+        self.frstOnset = frstOnset
+
+    def startBCI(self, brd, serialPort):
+        """Starts the connection/stream of the openBCI headset
+
+        Parameters
+        ----------
+        brd : str
+            Type of board connection to be used.
+            Could be one of:
+                "Synthetic"
+                "Bluetooth"
+                "WiFi"
+        serialPort : str
+            The serial port for connecting to the headset via bluetooth.
+            Could be one of:
+                COM4
+                COM3
+                /dev/ttyUSB0
+        """
+        #connect to headset
+        params = BrainFlowInputParams()
+
+        # cyton/daisy wifi is 6 https://brainflow.readthedocs.io/en/stable/SupportedBoards.html
+        # bluetooth is 2
+        if brd == "WiFi":
+            params.ip_address = '192.168.4.1'#'10.0.0.220'
+            params.ip_port = 6229
+            board = BoardShim(6, params)
+            self.sfreq = 1000
+        elif brd == "Synthetic":
+            board = BoardShim(-1, params)
+            self.sfreq = 250
+        elif brd == "Bluetooth":
+            params.serial_port = serialPort
+            board = BoardShim(2, params)
+            self.sfreq = 125
 
 
-class experiment():
+        board.prepare_session()
+        # by default stores 7.5 minutes of data; change num_samples higher for more
+        # sampling rate of 1k/s, so 450k samples in buffer
+        board.start_stream()
+        time.sleep(3)
+        self.board = board
+
+    def stopBCI(self, sensor_locations='LMI2'):
+        """Stops the openBCI datastream and disconnects the headset
+
+            Parameters
+            ----------
+            sensor_locations : str
+                Determines the sensor location dictionary to use. One of
+                'default', 'LMI1'
+
+        """
+        # wait a few seconds to have extra data padded at the end for filtering
+        time.sleep(3)
+        rawData = self.board.get_board_data()
+        self.board.stop_stream()
+        # this is for disconnecting the headset
+        self.board.release_session()
+
+        if sensor_locations == 'default':
+            number_to_1020 = {1: 'Fp1',
+                                2: 'Fp2',
+                                3: 'C3',
+                                4: 'C4',
+                                5: 'T5',
+                                6: 'T6',
+                                7: 'O1',
+                                8: 'O2',
+                                9: 'F7',
+                                10: 'F8',
+                                11: 'F3',
+                                12: 'F4',
+                                13: 'T3',
+                                14: 'T4',
+                                15: 'P3',
+                                16: 'P4'}
+        elif sensor_locations == 'LMI1':
+            number_to_1020 = {1: 'FC1',
+                                2: 'FC2',
+                                3: 'C3',
+                                4: 'C4',
+                                5: 'FC5',
+                                6: 'FC6',
+                                7: 'O1',
+                                8: 'O2',
+                                9: 'F7',
+                                10: 'F8',
+                                11: 'F3',
+                                12: 'F4',
+                                13: 'T3',
+                                14: 'T4',
+                                15: 'PO3',
+                                16: 'PO4'}
+        elif sensor_locations == 'LMI2':
+            number_to_1020 = {1: 'Fp1',
+                                2: 'Fp2',
+                                3: 'CP1',
+                                4: 'CP2',
+                                5: 'FC1', #change to FC1
+                                6: 'FC2', #change to FC2
+                                7: 'O1',
+                                8: 'O2',
+                                9: 'F7',
+                                10: 'F8',
+                                11: 'Fz',
+                                12: 'Cz',
+                                13: 'T3',
+                                14: 'T4',
+                                15: 'P3',
+                                16: 'P4'}
+
+        ch_types = ['eeg'] * 16
+        ch_names = list(number_to_1020.values())
+
+        info = mne.create_info(ch_names=ch_names,
+                            sfreq=self.sfreq,
+                            ch_types=ch_types)
+
+        raw = mne.io.RawArray(rawData[1:17], info)
+
+        # create annotations MNE object and attach to data
+        onsets_list = [(t.onset - rawData[-1,0]) for t in self.dataTrials]
+        durations_list = [t.duration for t in self.dataTrials]
+        desc_list = ['-'.join([str(t.description), t.label, t.flag]) for t in self.dataTrials]
+        annot = mne.Annotations(onsets_list, durations_list, desc_list)
+
+        raw.set_annotations(annot)
+
+        # set channel locations
+        montage = mne.channels.make_standard_montage('standard_1020')
+        raw.set_montage(montage)
+
+        # save MNE fif file and raw data as pickle file
+        raw.save(f"BCIproject_trial-{self.ID}_raw.fif.gz")
+        with open(f"data/BCIproject_trial-{self.ID}.pk", "wb") as f:
+            pickle.dump(rawData, f)
+
+class experiment:
     def __init__(self):
         self.slides = []
     def start_exp(self, exit_after=True, pKey='p', escKey='escape', fwdKey='right'):
@@ -212,8 +396,9 @@ class experiment():
 
 
 
-
-
+data = expData()
+data.startBCI("Synthetic", 2)
+data.stopBCI()
 
 exit_after=False
 pKey = 'p' # pause key
