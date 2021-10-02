@@ -1,5 +1,6 @@
 import sys
 import time
+import os
 
 from psychopy import gui, core
 import psychopy.visual as visual
@@ -394,9 +395,45 @@ class experiment:
 
 
 
-
-
 data = expData()
+
+while True:
+    dlg = gui.Dlg(title="BCI Experiment")
+    exp_id = dlg.addField('Experiment ID Number: ')
+    dlg.addField('Board Type:', choices=["Bluetooth", "WiFi", "Synthetic"])
+    dlg.addField('Serial Port (bluetooth only):', "COM4")
+    # for Windows, this brings the dialogue to the front of the screen
+    dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+    # potentially help bring window to the front on other OSs
+    dlg.activateWindow()
+    dlg.raise_()
+    exp_id.setFocus()  # start with cursor on experiment ID field
+    settings = dlg.show()  # show dialog and wait for OK or Cancel
+    if dlg.OK:  # or if ok_data is not None
+        data.ID = settings[0]
+        if f"BCIproject_trial-{data.ID}.pk" in os.listdir('data'):
+            dlg = gui.Dlg(title="Error")
+            dlg.addText(f'Error: data with this trial number {data.ID} already exists.')
+            dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+            dlg.activateWindow()
+            dlg.raise_()
+            dlg.show()
+            continue
+        if settings[0] != '':
+            break
+        else:
+            dlg = gui.Dlg(title="Error")
+            dlg.addText('Please enter a valid number for the trial.')
+            dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+            dlg.activateWindow()
+            dlg.raise_()
+            dlg.show()
+    else:  # clicked cancel
+        print('cancelling experiment')
+        # return
+
+
+
 data.startBCI("Synthetic", 2)
 data.stopBCI()
 
