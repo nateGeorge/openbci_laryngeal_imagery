@@ -411,7 +411,7 @@ while True:
     settings = dlg.show()  # show dialog and wait for OK or Cancel
     if dlg.OK:  # or if ok_data is not None
         data.ID = settings[0]
-        if f"BCIproject_trial-{data.ID}.pk" in os.listdir('data'):
+        if f"BCIproject_trial-{data.ID}.pk" in os.listdir('data/pickles'):
             dlg = gui.Dlg(title="Error")
             dlg.addText(f'Error: data with this trial number {data.ID} already exists.')
             dlg.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
