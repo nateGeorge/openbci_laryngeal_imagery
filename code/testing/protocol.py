@@ -238,8 +238,8 @@ class expData:
         raw.set_montage(montage)
 
         # save MNE fif file and raw data as pickle file
-        raw.save(f"BCIproject_trial-{self.ID}_raw.fif.gz")
-        with open(f"data/BCIproject_trial-{self.ID}.pk", "wb") as f:
+        raw.save(f"data/BCIproject_trial-{self.ID}_raw.fif.gz")
+        with open(f"data/pickles/BCIproject_trial-{self.ID}.pk", "wb") as f:
             pickle.dump(rawData, f)
 
 class experiment:
