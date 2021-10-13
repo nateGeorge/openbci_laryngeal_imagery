@@ -298,7 +298,10 @@ class experiment:
                 self.close_exp(check=True)
 
 
-    def listen_for(self, find=[], wait=-1):
+    def listen_for(self, find=[], wait=-1, present=False):
+        # Content for the slides should be presented within this function
+
+
         print('Press ' + self.escKey + ' to quit')
         print('Press ' + self.pKey + ' to pause')
         print('Press ' + self.fwdKey + ' to move forward ')
@@ -307,6 +310,10 @@ class experiment:
                 self.keys = getKeys()
                 print(str(i) + ": " + str(self.keys))
                 time.sleep(1)
+
+                # ************************************  Experiment Slide CAN goes here   ********************************************
+                # ***************************************************************************************************************
+
                 found = []
                 for f in find:
                     if f in self.keys:
@@ -316,7 +323,7 @@ class experiment:
                     if f == self.escKey:
                         self.close_exp(check=True)
                     if f == self.pKey:
-                        EXP.pause()
+                        EXP.pause() # this should probably be self instead of EXP
             # Maybe flip window here (this is after you've waited wait seconds)
         elif wait == -1:
             i=0
@@ -327,6 +334,18 @@ class experiment:
                 if i % 200000 == 0:
                     print('...')
                 found = []
+                # ************************************  Experiment Slide goes here   ********************************************
+                if present == True:
+                    slides = []
+                    slides.append(slide(texts= [("Hey, did I do the thing?",(-.5,0)),
+                                                ("Hey did I do a second thing?",(.5, 0))
+                                                    ], elph_box=-1))
+                    slides[0].make_stims()
+                    slides[0].show_slide(self)
+                    found.append(self.fwdKey)
+
+                # ***************************************************************************************************************
+
                 for f in find:
                     if f in self.keys:
                         found.append(f)
@@ -348,7 +367,7 @@ class experiment:
             print(Fore.BLUE + 'Section:')
             print(Style.RESET_ALL)
             print('\t' +  self.curSec)
-            self.listen_for(find=keys + [fwdKey], wait=wait)
+            self.listen_for(find=keys + [fwdKey], wait=wait, present=True)
             EXP.pause(end_sect=True)
         if section == 'ssvep':
             print(Fore.BLUE + 'Section:')
