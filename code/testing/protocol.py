@@ -3,8 +3,8 @@
 #   Classes
 import dialog
 
-# parameters
-class params:
+# experiment parameters
+class exp_params:
     # Paramaters object for modifying the experiment
     def __init__(self, debug=False):
         self.debug = debug
@@ -45,7 +45,7 @@ class experiment:
 
 if __name__ == "__main__":
     # Set Experiment Parameters
-    PARAMS = params(debug=True)
+    PARAMS = exp_params(debug=True)
 
     # Create Experiment Object
     EXP = experiment(PARAMS)
