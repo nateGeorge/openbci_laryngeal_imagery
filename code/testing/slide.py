@@ -9,6 +9,7 @@ class slide_params:
 class slide:
     # Present a PsychoPy Slide with Common Features
     def __init__(self, params):
-        if params.debug == True:
+        self.params = params
+        if self.params.debug == True:
             print("Slide")
         return
