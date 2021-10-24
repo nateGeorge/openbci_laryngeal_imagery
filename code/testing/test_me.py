@@ -16,7 +16,7 @@ if "PRSNT" in test:
     PRSNT = presenter.presenter(PRSNT_params) # instantiate a slide
 
     # Try: Use slide to make a slide object for presenting
-    slide1 = presenter.slide(slide_type="instructions")
+    Instructions_Slide_1 = presenter.slide(slide_type="instructions")
 
-    PRSNT.present_slide(slide1) # manage presenting a new slide
+    PRSNT.present_slide(Instructions_Slide_1) # manage presenting a new slide
     PRSNT.end_present(wait=1) # end presentation with a slide method

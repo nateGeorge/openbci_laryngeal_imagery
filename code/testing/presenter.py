@@ -61,7 +61,7 @@ class presenter:
         time.sleep(wait)
         self.psyPy_window.close()
 
-    # Handle Slide Presentation
+    # Handle Single Slide Presentation
     def present_slide(self, slide):
         if self.params.debug == True:
             print("Present Slide")
@@ -80,3 +80,15 @@ class presenter:
             #   Add 1 to self.n_cur_stims for each stimulus added
             # Flip Window
         pass
+
+    # Mangage Presentation of A Set of Slides
+    def present_slide_set(self, set=""):
+        #   set:
+        #       - pre-exp -- Present the instructions leading up to the experiment
+        #       - pre-SSVEP -- Present the instructions leading up to SSVEP
+        #       - pre-Motor-Real -- Present the instructions leading up to the Motor-Activity trial
+        #       - pre-Motor-Imagined -- Present the instructions leading up to the Motor-Imagery trial
+        #       - pre-Laryngeal-Activity-Real -- Present the instructions leading up to the Laryngeal Activity Real trial
+        #       - pre-Laryngeal-Activity-Imained -- Present the instructions leading up to the Laryngeal Activity Imagined trial
+        #       - pre-Laryngeal-Modulation-Real -- Present the instructions leading up to Laryngeal Modulation Real trial
+        #       - pre-Laryngeal-Modulation-Imagined -- Present the instructions leading up to Laryngeal Modulation Imagined trial
