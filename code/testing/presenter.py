@@ -13,13 +13,38 @@ class presentation_params:
         self.auto_end = auto_end
         return
 
+# Slide Parameters
+class slide:
+    # Object to Structure the attributes of a single slide
+    def __init__(self, slide_type="", response_type="", real_or_imagined="", check_board=False):
+        # Take arguments for:
+        #   slide_type:
+        #       - instructions -- no annotations needed
+        #       - trial -- manage annotations/labeling
+        #   response_type:
+        #       - SSVEP
+        #       - Motor
+        #       - Laryngeal-Activation
+        #       - Laryngeal-Modulation
+        #   real_or_imagined:
+        #       - Real - The response was real (externally performed)
+        #       - Imagined - The response was imagined (internally performed)
+        #   check_board:
+        #       - True -- Check data quality before
+        #       - False -- Don't check data quality before slide
+        self.slide_type = slide_type
+        self.response_type = response_type
+        self.real_or_imagined = real_or_imagined
+        self.check_board = check_board
+
+
 class presenter:
-    # Object for Presenting a PsychoPy Slide with Common Features
+    # Object for Presenting a PsychoPy Slides with Common Features
     def __init__(self, params):
         self.params = params
         self.n_cur_stims = 0 # the current number of stimuli on screen
         if self.params.debug == True:
-            print("Slide")
+            print("Presenter")
 
         # Open/Set PsychoPy Window Object
         self.psyPy_window = visual.Window()
@@ -37,20 +62,21 @@ class presenter:
         self.psyPy_window.close()
 
     # Handle Slide Presentation
-    def present_slide(self):
+    def present_slide(self, slide):
         if self.params.debug == True:
             print("Present Slide")
+            print("Num Current Stimuli: " + str(self.n_cur_stims))
         # Decide which (if any) Stimuli to remove
         #   Check how many current stimuli there are
-        print("Num Current Stimuli: " + str(self.n_cur_stims))
         #   Unset AutoDraw for Stimuli to remove
         #       subtract 1 from self.n_cur_stims for each stimulus to remove
 
-        # Decide Number of Stimuli to present (n)
-        # Loop through n Stimuli
-        #   Assign Position
-        #   Assign Style
-        #   Set AutoDraw
-        #   Add 1 to self.n_cur_stims for each stimulus added
-        # Flip Window
+        # Specify Stimuli Presentation to Slide Parameters
+            # Decide Number of Stimuli to present (n)
+            # Loop through n Stimuli
+            #   Assign Position
+            #   Assign Style
+            #   Set AutoDraw
+            #   Add 1 to self.n_cur_stims for each stimulus added
+            # Flip Window
         pass

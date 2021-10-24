@@ -14,5 +14,9 @@ if "DLG" in test:
 if "PRSNT" in test:
     PRSNT_params = presenter.presentation_params(debug=debug, auto_end=False) # set parameters for slide presentation
     PRSNT = presenter.presenter(PRSNT_params) # instantiate a slide
-    PRSNT.present_slide() # manage presenting a new slide
+
+    # Try: Use slide to make a slide object for presenting
+    slide1 = presenter.slide(slide_type="instructions")
+
+    PRSNT.present_slide(slide1) # manage presenting a new slide
     PRSNT.end_present(wait=1) # end presentation with a slide method
