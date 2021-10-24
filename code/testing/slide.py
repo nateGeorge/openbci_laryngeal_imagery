@@ -1,4 +1,8 @@
 # imports
+from psychopy import visual, core, event, sound
+from psychopy.event import Mouse, getKeys
+from psychopy.visual import Window
+from psychopy import gui
 
 # Slide Parameters
 class slide_params:
@@ -12,4 +16,8 @@ class slide:
         self.params = params
         if self.params.debug == True:
             print("Slide")
+        # Open PsychoPy Window
+        psyPy_window = visual.Window()
+
+        # Set/Return Window Object
         return

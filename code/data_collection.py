@@ -1107,7 +1107,6 @@ def run_experiment(debug=True, SSVEP_one_win=False):
         If True, only one SSVEP stimulus window shows up in the SSVEP section.
     """
     data = expData()
-
     while True:
         dlg = gui.Dlg(title="BCI Experiment")
         exp_id = dlg.addField('Experiment ID Number: ')
@@ -1119,8 +1118,13 @@ def run_experiment(debug=True, SSVEP_one_win=False):
         dlg.activateWindow()
         dlg.raise_()
         exp_id.setFocus()  # start with cursor on experiment ID field
+
+
         settings = dlg.show()  # show dialog and wait for OK or Cancel
+        # ^ line not working
+
         if dlg.OK:  # or if ok_data is not None
+
             data.ID = settings[0]
             if f"BCIproject_trial-{data.ID}.pk" in os.listdir('data'):
                 dlg = gui.Dlg(title="Error")
@@ -1143,13 +1147,12 @@ def run_experiment(debug=True, SSVEP_one_win=False):
             print('cancelling experiment')
             return
 
-    data.startBCI(settings[1], settings[2])
 
+    data.startBCI(settings[1], settings[2])
     if debug:
         window = visual.Window()
     else:
         window = visual.Window(fullscr=True)
-
 
     instructions(window)
     example(window)

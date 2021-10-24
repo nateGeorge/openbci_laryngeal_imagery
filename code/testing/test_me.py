@@ -2,7 +2,7 @@ import dialog
 import slide
 
 debug = True
-test = ["DLG"] # DLG - test dialogue boxes
+test = ["SLD"] # DLG - test dialogue boxes
                        # SLD - test slide
 
 if "DLG" in test:
