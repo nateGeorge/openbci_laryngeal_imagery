@@ -84,6 +84,9 @@ class presenter:
     # Mangage Presentation of A Set of Slides
     def present_slide_set(self, set=""):
         #   set:
+        ########  Test Sets ########
+        #       - individual-test -- test the workflow for presenting an individual slide
+        ########  Instruction Sets ########
         #       - pre-exp -- Present the instructions leading up to the experiment
         #       - pre-SSVEP -- Present the instructions leading up to SSVEP
         #       - pre-Motor-Real -- Present the instructions leading up to the Motor-Activity trial
@@ -92,3 +95,25 @@ class presenter:
         #       - pre-Laryngeal-Activity-Imained -- Present the instructions leading up to the Laryngeal Activity Imagined trial
         #       - pre-Laryngeal-Modulation-Real -- Present the instructions leading up to Laryngeal Modulation Real trial
         #       - pre-Laryngeal-Modulation-Imagined -- Present the instructions leading up to Laryngeal Modulation Imagined trial
+        ########  Trial Sets ########
+        #       - Check -- Present Elephant Question Stimulus and ask the participant to respond with the keyboard
+        #           - "Is the Elephant in the box? Click the 'y' for yes or 'n' for no."
+        #       - SSVEP -- Present flashing stimulus
+        #           - "Is the Elephant in the box? Look at the flashing light on the right for yes. Look at the flashing light on the left for no."
+        #       - Motor-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #           - "Is the Elephant in the box? Raise your right arm for Yes. Raise your left arm for No."
+        #       - Motor-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #           - "Is the Elephant in the box? Imagin raising your right arm for Yes. Imagin raising your left arm for No."
+        #       - Laryngeal-Activity-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #           - "Is the Elephant in the box? Make a humming sound for Yes. Remain silent for No."
+        #       - Laryngeal-Activity-Imained -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #           - "Is the Elephant in the box? Imagine making a humming sound for Yes. Remain silent for No."
+        #       - Laryngeal-Modulation-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #           - "Is the Elephant in the box? Hum a high pitch sound for Yes. Hum a low pitch sound for No."
+        #       - Laryngeal-Modulation-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #           - "Is the Elephant in the box? Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No."
+        if set == "test-individual":
+            if self.params.debug == True:
+                print("Slide Set: Test Individual")
+            slide1 = slide()
+            self.present_slide(slide1)
