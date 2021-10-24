@@ -12,5 +12,5 @@ if "DLG" in test:
     DLG.raise_dialog() # raise a dialog box
 
 if "SLD" in test:
-    SLD_params = slide.slide_params(debug=debug) # set parameters for a slide
+    SLD_params = slide.slide_params(debug=debug, auto_end=False) # set parameters for a slide
     SLD = slide.slide(SLD_params) # instantiate a slide
