@@ -16,7 +16,7 @@ class presentation_params:
 # Slide Parameters
 class slide:
     # Object to Structure the attributes of a single slide
-    def __init__(self, slide_type="", response_type="", real_or_imagined="", check_board=False):
+    def __init__(self, slide_type="", response_type="", real_or_imagined="", check_board=False, stim_list=[]):
         # Take arguments for:
         #   slide_type:
         #       - instructions -- no annotations needed
@@ -32,17 +32,19 @@ class slide:
         #   check_board:
         #       - True -- Check data quality before
         #       - False -- Don't check data quality before slide
+        #   stim_list: list of stimuli for presenting
         self.slide_type = slide_type
         self.response_type = response_type
         self.real_or_imagined = real_or_imagined
         self.check_board = check_board
+        self.stim_list = stim_list
 
 
 class presenter:
     # Object for Presenting a PsychoPy Slides with Common Features
     def __init__(self, params):
         self.params = params
-        self.n_cur_stims = 0 # the current number of stimuli on screen
+        self.cur_stims = [] # current stims
         if self.params.debug == True:
             print("Presenter")
 
@@ -65,20 +67,29 @@ class presenter:
     def present_slide(self, slide):
         if self.params.debug == True:
             print("Present Slide")
-            print("Num Current Stimuli: " + str(self.n_cur_stims))
-        # Decide which (if any) Stimuli to remove
+            print("Num Current Stimuli Before Removal: " + str(len(self.cur_stims)))
+        # Decide which (if any) Stimuli to remove (from presenter.cur_stims)
         #   Check how many current stimuli there are
         #   Unset AutoDraw for Stimuli to remove
         #       subtract 1 from self.n_cur_stims for each stimulus to remove
 
-        # Specify Stimuli Presentation to Slide Parameters
-            # Decide Number of Stimuli to present (n)
-            # Loop through n Stimuli
-            #   Assign Position
-            #   Assign Style
-            #   Set AutoDraw
-            #   Add 1 to self.n_cur_stims for each stimulus added
-            # Flip Window
+        # Add slide.stim_list to presenter.cur_stims
+        self.cur_stims = self.cur_stims + slide.stim_list
+
+        # Test -- This must be done inside of the next loop with consideration for which stimuli need to be removed, identified, have autoDraw changed and styling
+        self.cur_stims[0].draw()
+        self.psyPy_window.flip()
+        # End Test
+
+        # Decide Number of Stimuli to present (n)
+        # Loop through n Stimuli
+        #   Assign Position
+        #   Assign Style
+        #   Set AutoDraw
+        #   Add 1 to self.n_cur_stims for each stimulus added
+        # Flip Window
+        if self.params.debug == True:
+            print("Num Current Stimuli After Adding: " + str(len(self.cur_stims)))
         pass
 
     # Mangage Presentation of A Set of Slides
@@ -115,5 +126,9 @@ class presenter:
         if set == "test-individual":
             if self.params.debug == True:
                 print("Slide Set: Test Individual")
-            slide1 = slide()
+
+            Text_Stim = visual.TextStim(win=self.psyPy_window, text="This is a test")
+
+            slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
+
             self.present_slide(slide1)
