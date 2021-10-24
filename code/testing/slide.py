@@ -25,3 +25,13 @@ class slide:
         # Close PsychoPy Window (unless specified not to)
         if self.params.auto_end:
             self.psyPy_window.close()
+
+    # Close Presentation
+    def end_present(self):
+        if self.params.debug == True:
+            print("End Present")
+        self.psyPy_window.close()
+
+    # Add Slide (dictionary of values) to Present
+    def add_slide(self):
+        pass

@@ -14,3 +14,4 @@ if "DLG" in test:
 if "SLD" in test:
     SLD_params = slide.slide_params(debug=debug, auto_end=False) # set parameters for a slide
     SLD = slide.slide(SLD_params) # instantiate a slide
+    SLD.end_present()
