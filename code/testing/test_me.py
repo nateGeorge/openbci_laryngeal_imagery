@@ -19,4 +19,4 @@ if "PRSNT" in test:
     Instructions_Slide_1 = presenter.slide(slide_type="instructions")
 
     PRSNT.present_slide_set(set="test-individual")
-    PRSNT.end_present(wait=1) # end presentation with a slide method
+    PRSNT.end_present() # end presentation with a slide method

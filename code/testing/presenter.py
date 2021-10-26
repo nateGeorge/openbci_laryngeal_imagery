@@ -65,8 +65,17 @@ class presenter:
         time.sleep(wait)
         self.psyPy_window.close()
 
+    # Handle Key Press
+    def get_keypress(self):
+        # Return Keys Pressed
+        keys = event.getKeys()
+        if self.params.debug:
+            print(keys)
+        return keys
+
     # Handle Single Slide Presentation
-    def present_slide(self, slide):
+    def present_slide(self, slide, wait=0):
+        # wait - Make window wait on screen for wait seconds
         if self.params.debug == True:
             print("Present Slide")
             print("Num Current Stimuli Before Removal: " + str(len(self.cur_stims)))
@@ -81,6 +90,7 @@ class presenter:
         # Test -- This must be done inside of the next loop with consideration for which stimuli need to be removed, identified, have autoDraw changed and styling
         self.cur_stims[0].draw()
         self.psyPy_window.flip()
+        time.sleep(wait)
         # End Test
 
         # Decide Number of Stimuli to present (n)
@@ -134,12 +144,35 @@ class presenter:
 
             slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
 
-            self.present_slide(slide1)
+            self.present_slide(slide1, wait=1)
 
         # Wait for Response Key After Instruction/Trial
-            # Present Response Screen
+            # Present Response Prompt at Bottom of Screen
             # Wait (indefinitely) for response
-                # Check for Response Key
-                    # If Key = x -> Exit
-                    # If Key = right -> Move Forward
-                    # If Key = left -> Move Backward (repeat instructions/trial)
+        while True:
+            Response_Key_Text_Prompt = "Press: 'x' to Exit; right arrow to Move Forward; left arrow to Go Back"
+            Response_Key_Text_Stim = visual.TextStim(win=self.psyPy_window, text=Response_Key_Text_Prompt, height=.04)
+            Response_Key_Text_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(2)
+            keys = self.get_keypress()
+            print(keys)
+            # Check for Response Key
+            # If Key = x -> Exit
+            if 'x' in keys:
+                print('Found X Keys')
+                break
+            # If Key = right -> Move Forward
+            if 'right' in keys:
+                print('Found Right Keys')
+                # add one to placeholder
+                break
+            # If Key = left -> Move Backward (repeat instructions/trial)
+            if 'left' in keys:
+                print('Found Left Keys')
+                # subtract one from placeholder
+                break
+
+        # Test 2
+        self.get_keypress()
+        # End Test
