@@ -7,11 +7,12 @@ from psychopy import gui
 
 # Presentation Parameters
 class presentation_params:
-    def __init__(self, debug=False, auto_end=True):
+    def __init__(self, debug=False, auto_end=True, placeholder=1):
         # auto_end - If True, close window automatically; If False, window must be closed elsewhere in program.
+        # placeholder - Marks where the presentation currently stands; useful for moving forward/backward through the experiment
         self.debug = debug
         self.auto_end = auto_end
-        return
+        self.placeholder = placeholder
 
 # Slide Parameters
 class slide:
@@ -41,10 +42,11 @@ class slide:
 
 
 class presenter:
-    # Object for Presenting a PsychoPy Slides with Common Features
+    # Object for Presenting PsychoPy Slides with Common Features
     def __init__(self, params):
         self.params = params
         self.cur_stims = [] # current stims
+        self.placeholder = self.params.placeholder
         if self.params.debug == True:
             print("Presenter")
 
@@ -94,6 +96,7 @@ class presenter:
 
     # Mangage Presentation of A Set of Slides
     def present_slide_set(self, set=""):
+        # Run a set of slides then wait for key press to continue/exit
         #   set:
         ########  Test Sets ########
         #       - individual-test -- test the workflow for presenting an individual slide
@@ -132,3 +135,11 @@ class presenter:
             slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
 
             self.present_slide(slide1)
+
+        # Wait for Response Key After Instruction/Trial
+            # Present Response Screen
+            # Wait (indefinitely) for response
+                # Check for Response Key
+                    # If Key = x -> Exit
+                    # If Key = right -> Move Forward
+                    # If Key = left -> Move Backward (repeat instructions/trial)
