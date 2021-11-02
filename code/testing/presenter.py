@@ -1,9 +1,14 @@
-# imports
+# imports - base
 import time
 from psychopy import visual, core, event, sound
 from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
 from psychopy import gui
+
+# imports - homemade
+import connect
+
+
 
 # Presentation Parameters
 class presentation_params:
@@ -43,10 +48,11 @@ class slide:
 
 class presenter:
     # Object for Presenting PsychoPy Slides with Common Features
-    def __init__(self, params):
+    def __init__(self, params, dlg_settings):
         self.params = params
         self.cur_stims = [] # current stims
         self.placeholder = self.params.placeholder
+        self.dlg_settings = dlg_settings
         if self.params.debug == True:
             print("Presenter")
 
@@ -110,6 +116,7 @@ class presenter:
         #   set:
         ########  Test Sets ########
         #       - individual-test -- test the workflow for presenting an individual slide
+        #       - individual-test-w-connect -- test the workflow for presenting an individual slide and connect the recording EEG device
         ########  Instruction Sets ########
         #       - pre-exp -- Present the instructions leading up to the experiment
         #       - pre-SSVEP -- Present the instructions leading up to SSVEP
@@ -145,6 +152,21 @@ class presenter:
             slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
 
             self.present_slide(slide1, wait=1)
+
+        if set == "test-individual-w-connect":
+            print("Slide Set: Test Individual w/ Connect")
+
+            Text_Stim = visual.TextStim(win=self.psyPy_window, text="This is a test with OpenBCI connection included")
+
+            cnct = connect.controller() # Set board Type for initial connection
+            cnct.make_connection(brdType=self.dlg_settings[1], bt_port=self.dlg_settings[2], ip_port=self.dlg_settings[3], ip_address=self.dlg_settings[3])
+
+            slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
+
+            self.present_slide(slide1, wait=1)
+
+            cnct.end_connection()
+
 
         # Wait for Response Key After Instruction/Trial
             # Present Response Prompt at Bottom of Screen

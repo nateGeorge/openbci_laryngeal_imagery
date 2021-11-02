@@ -5,7 +5,7 @@ from psychopy import gui
 # dialog box parameters
 class dialog_params:
     # Collect parameters for modifying dialog box in one dialog_params object
-    def __init__(self, debug=False, features=["EXP_ID", "BRD_TYPE", "SRL_PORT"]):
+    def __init__(self, debug=False, features=["EXP_ID", "BRD_TYPE", "SRL_PORT", "IP"]):
         self.debug = debug
         self.features = features
         return
@@ -29,6 +29,8 @@ class dialog:
             self.params.brd_type = True
         if "SRL_PORT" in self.params.features:
             self.params.srl_port = True
+        if "IP" in self.params.features:
+            self.params.ip = True
         return
 #   Raise Dialog Box
     def raise_dialog(self):
@@ -42,7 +44,10 @@ class dialog:
                 dlgWin.addField('Board Type:', choices=["Bluetooth", "WiFi", "Synthetic"])
         if self.params.srl_port:
                 dlgWin.addField('Serial Port (bluetooth only):', "COM4")
-        dlgWin.show()
+        if self.params.ip:
+                dlgWin.addField('IP Port (wifi only):', 6229)
+                dlgWin.addField('IP Address (wifi only): ', '192.168.4.1')
+        settings = dlgWin.show()
         # Make Object with Values
         # Return Object
-        return
+        return settings
