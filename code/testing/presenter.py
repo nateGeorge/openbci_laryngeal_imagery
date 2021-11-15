@@ -94,14 +94,15 @@ class presenter:
         self.cur_stims = self.cur_stims + slide.stim_list
 
         # Test -- This must be done inside of the next loop with consideration for which stimuli need to be removed, identified, have autoDraw changed and styling
-        i = 0
+        i = 0 # use i to start the loop then status to close it
+        start_time = time.time()
+        print("Start Time: " + str(start_time))
         while self.cur_stims[0].status == 1 or i == 0:
-            print('Status?')
-            print(self.cur_stims[0].status)
             self.cur_stims[0].draw()
             self.psyPy_window.flip()
-            print("Start Time - Window: " + str(time.time()))
             i += 1
+        duration = time.time() - start_time
+        print("Duration - Inside: " + str(duration))
         time.sleep(wait)
         # End Test
 
@@ -115,6 +116,9 @@ class presenter:
         if self.params.debug == True:
             print("Num Current Stimuli After Adding: " + str(len(self.cur_stims)))
         pass
+
+        # TEST: this return should really be an attribute for an object but I'll fix it later
+        return start_time
 
     # Mangage Presentation of A Set of Slides
     def present_slide_set(self, set=""):
@@ -183,7 +187,10 @@ class presenter:
 
             slide1 = slide(stim_list=[SSVEP_Stim])
 
-            self.present_slide(slide1, wait=0)
+            start_time = self.present_slide(slide1, wait=0)
+
+            duration = time.time() - start_time
+            print("Duration - Outside: " + str(duration))
 
 
         # Wait for Response Key After Instruction/Trial
