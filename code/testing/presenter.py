@@ -93,26 +93,6 @@ class presenter:
         # Add slide.stim_list to presenter.cur_stims
         self.cur_stims = self.cur_stims + slide.stim_list
 
-        # Test -- This must be done inside of the next loop with consideration for which stimuli need to be removed, identified, have autoDraw changed and styling
-        # i = 0 # use i to start the loop then status to close it
-        # start_time = time.time()
-        # print("Start Time: " + str(start_time))
-        # while self.cur_stims[0].status == 1 or i == 0:
-        #     self.cur_stims[0].draw()
-        #     self.psyPy_window.flip()
-        #     i += 1
-        # duration = time.time() - start_time
-        # print("Duration - Inside: " + str(duration))
-        # time.sleep(wait)
-        # End Test
-
-        print("Here is present slide")
-
-        # Test -- Print the stimulus type (one of each type)
-        for i in range(len(self.cur_stims)):
-            print("Type of Stim (" + str(i) + "): " + str(type(self.cur_stims[i])).split('.')[-2])
-        # End Test
-
         # Loop through num cur_stim:
         for i in range(len(self.cur_stims)):
             # get stim_type
