@@ -106,13 +106,21 @@ class presenter:
         time.sleep(wait)
         # End Test
 
-        # Decide Number of Stimuli to present (n)
-        # Loop through n Stimuli
-        #   Assign Position
-        #   Assign Style
-        #   Set AutoDraw
-        #   Add 1 to self.n_cur_stims for each stimulus added
-        # Flip Window
+        print("Here is present slide")
+
+        # Test -- Print the stimulus type (one of each type)
+        print(str(type(self.cur_stims[0])).split('.'))
+        # End Test
+
+        # Loop through num cur_stim:
+        #   # if stim type == movie:
+        #   #   # handle movie (SSVEP) element stim
+        #   # if stim type == array:
+        #   #   #   handle multi-element stim
+        #   # else:
+        #   #   # handle single element stim
+
+
         if self.params.debug == True:
             print("Num Current Stimuli After Adding: " + str(len(self.cur_stims)))
         pass
@@ -154,7 +162,7 @@ class presenter:
         #           - "Is the Elephant in the box? Hum a high pitch sound for Yes. Hum a low pitch sound for No."
         #       - Laryngeal-Modulation-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
         #           - "Is the Elephant in the box? Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No."
-        if set == "test-individual":
+        if set == "individual-test":
             if self.params.debug == True:
                 print("Slide Set: Test Individual")
 
@@ -164,7 +172,7 @@ class presenter:
 
             self.present_slide(slide1, wait=1)
 
-        if set == "test-individual-w-connect":
+        if set == "individual-test-w-connect":
             print("Slide Set: Test Individual w/ Connect")
             print("Start Time - Set: " + str(time.time()))
 
