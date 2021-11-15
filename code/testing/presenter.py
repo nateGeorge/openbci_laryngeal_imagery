@@ -94,8 +94,14 @@ class presenter:
         self.cur_stims = self.cur_stims + slide.stim_list
 
         # Test -- This must be done inside of the next loop with consideration for which stimuli need to be removed, identified, have autoDraw changed and styling
-        self.cur_stims[0].draw()
-        self.psyPy_window.flip()
+        i = 0
+        while self.cur_stims[0].status == 1 or i == 0:
+            print('Status?')
+            print(self.cur_stims[0].status)
+            self.cur_stims[0].draw()
+            self.psyPy_window.flip()
+            print("Start Time - Window: " + str(time.time()))
+            i += 1
         time.sleep(wait)
         # End Test
 
@@ -117,6 +123,7 @@ class presenter:
         ########  Test Sets ########
         #       - individual-test -- test the workflow for presenting an individual slide
         #       - individual-test-w-connect -- test the workflow for presenting an individual slide and connect the recording EEG device
+        #       - ssvep-test -- test making the SSVEP stimulus with this set
         ########  Instruction Sets ########
         #       - pre-exp -- Present the instructions leading up to the experiment
         #       - pre-SSVEP -- Present the instructions leading up to SSVEP
@@ -155,6 +162,7 @@ class presenter:
 
         if set == "test-individual-w-connect":
             print("Slide Set: Test Individual w/ Connect")
+            print("Start Time - Set: " + str(time.time()))
 
             Text_Stim = visual.TextStim(win=self.psyPy_window, text="This is a test with OpenBCI connection included")
 
@@ -166,6 +174,16 @@ class presenter:
             self.present_slide(slide1, wait=1)
 
             cnct.end_connection()
+
+        if set == "ssvep-test":
+            print("Slide Set: SSVEP Test")
+            frequency = 7
+            stim_size = int(self.psyPy_window.size[0] / 3)
+            SSVEP_Stim = visual.MovieStim3(self.psyPy_window, f'media/{frequency}Hz.avi', size=(stim_size, stim_size), pos=[0, 0])
+
+            slide1 = slide(stim_list=[SSVEP_Stim])
+
+            self.present_slide(slide1, wait=0)
 
 
         # Wait for Response Key After Instruction/Trial

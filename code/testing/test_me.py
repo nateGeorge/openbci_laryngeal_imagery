@@ -18,5 +18,5 @@ if "PRSNT" in test:
     # Try: Use slide to make a slide object for presenting
     Instructions_Slide_1 = presenter.slide(slide_type="instructions")
 
-    PRSNT.present_slide_set(set="test-individual-w-connect")
+    PRSNT.present_slide_set(set="ssvep-test")
     PRSNT.end_present() # end presentation with a slide method
