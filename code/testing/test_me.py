@@ -9,20 +9,16 @@ if "DLG" in test:
     DLG_params = dialog.dialog_params(debug=debug) # set paramaters for the dialog box
     DLG = dialog.dialog(params=DLG_params) # instantiate a dialog box
     DLG.define_dialog_features() # define dialog box features
-    dlg_settings = DLG.raise_dialog() # raise a dialog box
-
-    #Begin Test -----------------------------------#
-    DLG_settings = {"exp_id":dlg_settings[0],
-                    "brd_type":dlg_settings[1],
-                    "bt_port":dlg_settings[2],
-                    "ip_port":dlg_settings[3],
-                    "ip_addr":dlg_settings[4]}
-    print(DLG_settings["exp_id"])
-    #End Test -----------------------------------#
+    DLG_settings = DLG.raise_dialog() # raise a dialog box
+    dlg_settings = {"exp_id": DLG_settings[0],
+                    "brd_type": DLG_settings[1],
+                    "bt_port": DLG_settings[2],
+                    "ip_port": DLG_settings[3],
+                    "ip_addr": DLG_settings[4]}
 
 if "PRSNT" in test:
     PRSNT_params = presenter.presentation_params(debug=debug, auto_end=False) # set parameters for slide presentation
-    PRSNT = presenter.presenter(PRSNT_params, dlg_settings=DLG_settings) # instantiate a slide
+    PRSNT = presenter.presenter(PRSNT_params, dlg_settings=dlg_settings) # instantiate a slide
 
     PRSNT.present_slide_set(set="individual-test-w-connect")
     PRSNT.end_present() # end presentation with a slide method

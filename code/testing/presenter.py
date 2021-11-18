@@ -125,6 +125,7 @@ class presenter:
         #       - individual-test-w-connect -- test the workflow for presenting an individual slide and connect the recording EEG device
         #       - ssvep-test -- test making the SSVEP stimulus with this set
         #       - multi-slide-test -- test the workflow with multiple stimuli sequentially
+        #       - connection-types-test -- test the workflow with each of the 3 board connection types
         ########  Instruction Sets ########
         #       - pre-exp -- Present the instructions leading up to the experiment
         #       - pre-SSVEP -- Present the instructions leading up to SSVEP

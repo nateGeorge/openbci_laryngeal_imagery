@@ -1,5 +1,6 @@
 # imports
 from psychopy import gui
+import os
 
 
 # dialog box parameters
@@ -39,7 +40,14 @@ class dialog:
         dlgWin = gui.Dlg()
         # Set Dialog Box Features
         if self.params.get_exp_id:
-                exp_id = dlgWin.addField('Experiment ID Number: ')
+                print('Data files')
+                dir = os.listdir("data")
+                exp_ids = []
+                for file in dir:
+                    exp_ids.append(int(file.strip("BCIproject_trial-").split("_")[0]))
+                max_exp_id = max(exp_ids)
+                def_exp_id = max_exp_id + 1 # default experiment ID
+                exp_id = dlgWin.addField('Experiment ID Number: ', def_exp_id)
         if self.params.brd_type:
                 dlgWin.addField('Board Type:', choices=["Bluetooth", "WiFi", "Synthetic"])
         if self.params.srl_port:
