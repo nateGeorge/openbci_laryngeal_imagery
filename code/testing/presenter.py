@@ -84,7 +84,6 @@ class presenter:
         # wait - Make window wait on screen for wait seconds
         if self.params.debug == True:
             print("Present Slide")
-            print("Num Current Stimuli Before Removal: " + str(len(self.cur_stims)))
         # Decide which (if any) Stimuli to remove (from presenter.cur_stims)
         #   Check how many current stimuli there are
         #   Unset AutoDraw for Stimuli to remove
@@ -101,7 +100,6 @@ class presenter:
             if stim_type == "movie3":
                 j = 0
                 while self.cur_stims[i].status == 1 or j == 0:
-                    print('Hello')
                     self.cur_stims[i].draw()
                     self.psyPy_window.flip()
                     j+=1
@@ -113,11 +111,6 @@ class presenter:
                 self.cur_stims[i].draw()
                 self.psyPy_window.flip()
                 time.sleep(1)
-
-
-        if self.params.debug == True:
-            print("Num Current Stimuli After Adding: " + str(len(self.cur_stims)))
-        pass
 
         # TEST: this return should really be an attribute for an object but I'll fix it later
         start_time = -1 # annoying bug
@@ -199,7 +192,6 @@ class presenter:
         if set == "multi-slide-test":
 
             # make text stim
-            print('Test A')
             Text_Stim = visual.TextStim(self.psyPy_window, text="Multi-Slide Test: Text")
             # make rect stim
             Rect_Stim = visual.Rect(self.psyPy_window, pos=((0, 0.25)), lineColor="red")
