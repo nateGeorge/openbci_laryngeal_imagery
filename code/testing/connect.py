@@ -3,6 +3,7 @@ import time
 import numpy as np
 import pandas as pd
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
+import mne
 
 # connection (obj)
 class connection:
@@ -47,8 +48,39 @@ class controller:
         self.cnct.board_obj.start_stream()
         print("New Connection")
 
-    def end_connection(self):
+    def end_connection(self, save=True, save_as="unamed_file", ext=".fif.gz"):
         # End the Board Connection
+        #   save (bool) - save the board data if True
+        #   save_as (str) - name to save file as
+        #   ext (str) - extension to save file with
+
+        # Check if Data should be saved
+        if save == True:
+            # assign raw data to variable
+            print("Hallo")
+            rawData = self.cnct.board_obj.get_board_data()
+            print(rawData)
+            # create info object (channel names (list), sfreq (int), channel types (list))
+            number_to_1020 = {1: 'FC1', 2: 'FC2', 3: 'C3', 4: 'C4',
+                              5: 'FC5', 6: 'FC6', 7: 'O1', 8: 'O2',
+                              9: 'F7', 10: 'F8', 11: 'F3', 12: 'F4',
+                              13: 'T3', 14: 'T4', 15: 'PO3', 16: 'PO4'}
+            ch_names = list(number_to_1020.values())
+            ch_types = ['eeg'] * 16
+            info = mne.create_info(ch_names=ch_names, sfreq=self.cnct.sfreq, ch_types=ch_types)
+            # combine info and raw data to make (mne) raw (rawArray) object
+            raw = mne.io.RawArray(rawData[1:17], info)
+            # create annotations object (later)
+            # set annotations/attach annotations to raw mne object (later)
+            # set mne channel location montage (standard_1020) and attach to raw mne object
+            montage = mne.channels.make_standard_montage('standard_1020')
+            # save raw object as MNE fif file
+            print("Save as is:")
+            print("\t" + save_as)
+            raw.save(save_as + ext)
+            # save raw data as pickle file
+            print("Googbaye")
+
         print("End Connection")
         self.cnct.board_obj.stop_stream()
         self.cnct.board_obj.release_session()

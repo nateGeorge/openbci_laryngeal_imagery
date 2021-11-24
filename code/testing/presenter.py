@@ -125,7 +125,6 @@ class presenter:
         #       - individual-test-w-connect -- test the workflow for presenting an individual slide and connect the recording EEG device
         #       - ssvep-test -- test making the SSVEP stimulus with this set
         #       - multi-slide-test -- test the workflow with multiple stimuli sequentially
-        #       - connection-types-test -- test the workflow with each of the 3 board connection types
         ########  Instruction Sets ########
         #       - pre-exp -- Present the instructions leading up to the experiment
         #       - pre-SSVEP -- Present the instructions leading up to SSVEP
@@ -175,7 +174,7 @@ class presenter:
 
             self.present_slide(slide1, wait=1)
 
-            cnct.end_connection()
+            cnct.end_connection(save_as=f"data/BCIproject_trial-{self.dlg_settings['exp_id']}_raw")
 
         if set == "ssvep-test":
             print("Slide Set: SSVEP Test")
