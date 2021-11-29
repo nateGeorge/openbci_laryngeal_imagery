@@ -167,14 +167,9 @@ class presenter:
 
             Text_Stim = visual.TextStim(win=self.psyPy_window, text="This is a test with OpenBCI connection included")
 
-            cnct = connect.controller() # Set board Type for initial connection
-            cnct.make_connection(brdType=self.dlg_settings["brd_type"], bt_port=self.dlg_settings["bt_port"], ip_port=self.dlg_settings["ip_port"], ip_address=self.dlg_settings["ip_addr"])
-
             slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
 
             self.present_slide(slide1, wait=1)
-
-            cnct.end_connection(save_as=f"data/BCIproject_trial-{self.dlg_settings['exp_id']}_raw")
 
         if set == "ssvep-test":
             print("Slide Set: SSVEP Test")
