@@ -57,7 +57,6 @@ class controller:
         # Check if Data should be saved
         if save == True:
             # assign raw data to variable
-            print("Hallo")
             rawData = self.cnct.board_obj.get_board_data()
             print(rawData)
             # create info object (channel names (list), sfreq (int), channel types (list))
@@ -75,11 +74,10 @@ class controller:
             # set mne channel location montage (standard_1020) and attach to raw mne object
             montage = mne.channels.make_standard_montage('standard_1020')
             # save raw object as MNE fif file
-            print("Save as is:")
+            print("Save as:")
             print("\t" + save_as)
             raw.save(save_as + ext)
             # save raw data as pickle file
-            print("Googbaye")
 
         print("End Connection")
         self.cnct.board_obj.stop_stream()

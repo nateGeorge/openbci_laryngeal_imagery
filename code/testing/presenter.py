@@ -122,7 +122,8 @@ class presenter:
         #   set:
         ########  Test Sets ########
         #       - individual-test -- test the workflow for presenting an individual slide
-        #       - individual-test-w-connect -- test the workflow for presenting an individual slide and connect the recording EEG device
+        #       - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
+        #           - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
         #       - ssvep-test -- test making the SSVEP stimulus with this set
         #       - multi-slide-test -- test the workflow with multiple stimuli sequentially
         ########  Instruction Sets ########
@@ -145,7 +146,7 @@ class presenter:
         #           - "Is the Elephant in the box? Imagin raising your right arm for Yes. Imagin raising your left arm for No."
         #       - Laryngeal-Activity-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
         #           - "Is the Elephant in the box? Make a humming sound for Yes. Remain silent for No."
-        #       - Laryngeal-Activity-Imained -- Present Elephant Question Stimulus w/ appropriate response prompt
+        #       - Laryngeal-Activity-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
         #           - "Is the Elephant in the box? Imagine making a humming sound for Yes. Remain silent for No."
         #       - Laryngeal-Modulation-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
         #           - "Is the Elephant in the box? Hum a high pitch sound for Yes. Hum a low pitch sound for No."
@@ -161,7 +162,7 @@ class presenter:
 
             self.present_slide(slide1, wait=1)
 
-        if set == "individual-test-w-connect":
+        if set == "individual-test-w-xconnectx":
             print("Slide Set: Test Individual w/ Connect")
             print("Start Time - Set: " + str(time.time()))
 
