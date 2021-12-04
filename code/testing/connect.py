@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import mne
+import pickle
 
 # connection (obj)
 class connection:
@@ -78,6 +79,8 @@ class controller:
             print("\t" + save_as)
             raw.save(save_as + ext)
             # save raw data as pickle file
+            with open(save_as + ".pk", "wb") as f:
+                pickle.dump(rawData, f)
 
         print("End Connection")
         self.cnct.board_obj.stop_stream()
