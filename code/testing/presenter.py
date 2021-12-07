@@ -19,32 +19,6 @@ class presentation_params:
         self.auto_end = auto_end
         self.placeholder = placeholder
 
-# Slide Parameters
-class slide:
-    # Object to Structure the attributes of a single slide
-    def __init__(self, slide_type="", response_type="", real_or_imagined="", check_board=False, stim_list=[]):
-        # Take arguments for:
-        #   slide_type:
-        #       - instructions -- no annotations needed
-        #       - trial -- manage annotations/labeling
-        #   response_type:
-        #       - SSVEP
-        #       - Motor
-        #       - Laryngeal-Activation
-        #       - Laryngeal-Modulation
-        #   real_or_imagined:
-        #       - Real - The response was real (externally performed)
-        #       - Imagined - The response was imagined (internally performed)
-        #   check_board:
-        #       - True -- Check data quality before
-        #       - False -- Don't check data quality before slide
-        #   stim_list: list of stimuli for presenting
-        self.slide_type = slide_type
-        self.response_type = response_type
-        self.real_or_imagined = real_or_imagined
-        self.check_board = check_board
-        self.stim_list = stim_list
-
 
 class presenter:
     # Object for Presenting PsychoPy Slides with Common Features
@@ -78,43 +52,6 @@ class presenter:
         if self.params.debug:
             print(keys)
         return keys
-
-    # Handle Single Slide Presentation
-    def present_slide(self, slide, wait=0):
-        # wait - Make window wait on screen for wait seconds
-        if self.params.debug == True:
-            print("Present Slide")
-        # Decide which (if any) Stimuli to remove (from presenter.cur_stims)
-        #   Check how many current stimuli there are
-        #   Unset AutoDraw for Stimuli to remove
-        #       subtract 1 from self.n_cur_stims for each stimulus to remove
-
-        # Add slide.stim_list to presenter.cur_stims
-        self.cur_stims = self.cur_stims + slide.stim_list
-
-        # Loop through num cur_stim:
-        for i in range(len(self.cur_stims)):
-            # get stim_type
-            stim_type = str(type(self.cur_stims[i])).split('.')[-2]
-
-            if stim_type == "movie3":
-                j = 0
-                while self.cur_stims[i].status == 1 or j == 0:
-                    self.cur_stims[i].draw()
-                    self.psyPy_window.flip()
-                    j+=1
-        #   #   # handle movie (SSVEP) element stim
-        #   # if stim type == array:
-        #   #   #   handle multi-element stim
-            else:
-                # handle single element stim
-                self.cur_stims[i].draw()
-                self.psyPy_window.flip()
-                time.sleep(1)
-
-        # TEST: this return should really be an attribute for an object but I'll fix it later
-        start_time = -1 # annoying bug
-        return start_time
 
     # Mangage Presentation of A Set of Slides
     def present_slide_set(self, set=""):
@@ -158,57 +95,61 @@ class presenter:
 
             Text_Stim = visual.TextStim(win=self.psyPy_window, text="This is a test")
 
-            slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
+            Text_Stim.draw()
+            self.psyPy_window.flip()
 
-            self.present_slide(slide1, wait=1)
-
-        if set == "individual-test-w-xconnectx":
-            print("Slide Set: Test Individual w/ Connect")
-            print("Start Time - Set: " + str(time.time()))
-
-            Text_Stim = visual.TextStim(win=self.psyPy_window, text="This is a test with OpenBCI connection included")
-
-            slide1 = slide(stim_list=[Text_Stim]) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
-
-            self.present_slide(slide1, wait=1)
+            time.sleep(1)
 
         if set == "ssvep-test":
             print("Slide Set: SSVEP Test")
+
             frequency = 7
             stim_size = int(self.psyPy_window.size[0] / 3)
             SSVEP_Stim = visual.MovieStim3(self.psyPy_window, f'media/{frequency}Hz.avi', size=(stim_size, stim_size), pos=[0, 0])
 
-            slide1 = slide(stim_list=[SSVEP_Stim])
+            j = 0
+            while SSVEP_Stim.status == 1 or j == 0:
+                SSVEP_Stim.draw()
+                self.psyPy_window.flip()
+                j+=1
 
-            start_time = self.present_slide(slide1, wait=0)
+            Done_Text_Stim = visual.TextStim(win=self.psyPy_window, text="SSVEP Done")
+            Done_Text_Stim.draw()
+            self.psyPy_window.flip()
 
-            duration = time.time() - start_time
-            print("Duration - Outside: " + str(duration))
+            time.sleep(1)
+
+            #show SSVEP start time and duration
 
         if set == "multi-slide-test":
 
-            # make text stim
+            # make/show text stim
             Text_Stim = visual.TextStim(self.psyPy_window, text="Multi-Slide Test: Text")
-            # make rect stim
+            Text_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            # make/show rect stim
             Rect_Stim = visual.Rect(self.psyPy_window, pos=((0, 0.25)), lineColor="red")
-            # make movie stim
+            Rect_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            # make/show movie stim
             stim_size = int(self.psyPy_window.size[0] / 3)
             Movie_Stim = visual.MovieStim3(self.psyPy_window, f'media/7Hz.avi', size=(stim_size, stim_size), pos=[0, 0])
-            # make image stim
+            j=0
+            while Movie_Stim.status == 1 or j == 0:
+                Movie_Stim.draw()
+                self.psyPy_window.flip()
+                j+=1
+
+            # make/show image stim
             Img_Stim = visual.ImageStim(self.psyPy_window, image=f'media/lemmling-2D-cartoon-elephant.jpg', mask=f'media/lemmling-2D-cartoon-elephant-transparency-mask.jpg', pos=((0, 0.25)), size=0.4)
-                # append all stim to an array
-            stims = [Text_Stim, Rect_Stim, Movie_Stim, Img_Stim]
+            Img_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
 
-            # create slide object with stims_list equal to the stim array
-            slides = slide(stim_list=stims) # use this to create stims, but for testing right now just add a stim to the self.cur_stims array
-
-
-            returned_start_time = self.present_slide(slides, wait=1)
-
-
-        # Wait for Response Key After Instruction/Trial
-            # Present Response Prompt at Bottom of Screen
-            # Wait (indefinitely) for response
         while True:
             Response_Key_Text_Prompt = "Press: 'x' to Exit; right arrow to Move Forward; left arrow to Go Back"
             Response_Key_Text_Stim = visual.TextStim(win=self.psyPy_window, text=Response_Key_Text_Prompt, height=.04)
