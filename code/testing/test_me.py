@@ -27,8 +27,8 @@ if "PRSNT" in test:
         cnct.make_connection(brdType=dlg_settings["brd_type"], bt_port=dlg_settings["bt_port"], ip_port=dlg_settings["ip_port"], ip_address=dlg_settings["ip_addr"])
 
 
-    # PRSNT.present_slide_set(set="ssvep-test")
-    PRSNT.present_slide_set(set="multi-slide-test")
+    PRSNT.present_slide_set(set="ssvep-test")
+    # PRSNT.present_slide_set(set="multi-slide-test")
     PRSNT.end_present() # end presentation with a slide method
 
     if "CNCT" in test:

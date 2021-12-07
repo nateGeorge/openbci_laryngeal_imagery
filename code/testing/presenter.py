@@ -54,41 +54,48 @@ class presenter:
         return keys
 
     # Mangage Presentation of A Set of Slides
-    def present_slide_set(self, set=""):
-        # Run a set of slides then wait for key press to continue/exit
-        #   set:
-        ########  Test Sets ########
-        #       - individual-test -- test the workflow for presenting an individual slide
-        #       - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
-        #           - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
-        #       - ssvep-test -- test making the SSVEP stimulus with this set
-        #       - multi-slide-test -- test the workflow with multiple stimuli sequentially
-        ########  Instruction Sets ########
-        #       - pre-exp -- Present the instructions leading up to the experiment
-        #       - pre-SSVEP -- Present the instructions leading up to SSVEP
-        #       - pre-Motor-Real -- Present the instructions leading up to the Motor-Activity trial
-        #       - pre-Motor-Imagined -- Present the instructions leading up to the Motor-Imagery trial
-        #       - pre-Laryngeal-Activity-Real -- Present the instructions leading up to the Laryngeal Activity Real trial
-        #       - pre-Laryngeal-Activity-Imained -- Present the instructions leading up to the Laryngeal Activity Imagined trial
-        #       - pre-Laryngeal-Modulation-Real -- Present the instructions leading up to Laryngeal Modulation Real trial
-        #       - pre-Laryngeal-Modulation-Imagined -- Present the instructions leading up to Laryngeal Modulation Imagined trial
-        ########  Trial Sets ########
-        #       - Check -- Present Elephant Question Stimulus and ask the participant to respond with the keyboard
-        #           - "Is the Elephant in the box? Click the 'y' for yes or 'n' for no."
-        #       - SSVEP -- Present flashing stimulus
-        #           - "Is the Elephant in the box? Look at the flashing light on the right for yes. Look at the flashing light on the left for no."
-        #       - Motor-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
-        #           - "Is the Elephant in the box? Raise your right arm for Yes. Raise your left arm for No."
-        #       - Motor-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
-        #           - "Is the Elephant in the box? Imagin raising your right arm for Yes. Imagin raising your left arm for No."
-        #       - Laryngeal-Activity-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
-        #           - "Is the Elephant in the box? Make a humming sound for Yes. Remain silent for No."
-        #       - Laryngeal-Activity-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
-        #           - "Is the Elephant in the box? Imagine making a humming sound for Yes. Remain silent for No."
-        #       - Laryngeal-Modulation-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
-        #           - "Is the Elephant in the box? Hum a high pitch sound for Yes. Hum a low pitch sound for No."
-        #       - Laryngeal-Modulation-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
-        #           - "Is the Elephant in the box? Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No."
+    def present_slide_set(self, set="", kwarg=""):
+        """
+        Run a set of slides then wait for key press to continue/exit
+
+        Parameters:
+          set: (str) the name of the slide set
+          kwarg: (str) "--"-seperated keyword argument string for modifying slide sets
+
+
+        #######  Test Sets ########
+              - individual-test -- test the workflow for presenting an individual slide
+              - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
+                  - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
+              - ssvep-test -- test making the SSVEP stimulus with this set
+              - multi-slide-test -- test the workflow with multiple stimuli sequentially
+        #######  Instruction Sets ########
+              - pre-exp -- Present the instructions leading up to the experiment
+              - pre-SSVEP -- Present the instructions leading up to SSVEP
+              - pre-Motor-Real -- Present the instructions leading up to the Motor-Activity trial
+              - pre-Motor-Imagined -- Present the instructions leading up to the Motor-Imagery trial
+              - pre-Laryngeal-Activity-Real -- Present the instructions leading up to the Laryngeal Activity Real trial
+              - pre-Laryngeal-Activity-Imained -- Present the instructions leading up to the Laryngeal Activity Imagined trial
+              - pre-Laryngeal-Modulation-Real -- Present the instructions leading up to Laryngeal Modulation Real trial
+              - pre-Laryngeal-Modulation-Imagined -- Present the instructions leading up to Laryngeal Modulation Imagined trial
+        #######  Trial Sets ########
+              - Check -- Present Elephant Question Stimulus and ask the participant to respond with the keyboard
+                  - "Is the Elephant in the box? Click the 'y' for yes or 'n' for no."
+              - SSVEP -- Present flashing stimulus
+                  - "Is the Elephant in the box? Look at the flashing light on the right for yes. Look at the flashing light on the left for no."
+              - Motor-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
+                  - "Is the Elephant in the box? Raise your right arm for Yes. Raise your left arm for No."
+              - Motor-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
+                  - "Is the Elephant in the box? Imagin raising your right arm for Yes. Imagin raising your left arm for No."
+              - Laryngeal-Activity-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
+                  - "Is the Elephant in the box? Make a humming sound for Yes. Remain silent for No."
+              - Laryngeal-Activity-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
+                  - "Is the Elephant in the box? Imagine making a humming sound for Yes. Remain silent for No."
+              - Laryngeal-Modulation-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
+                  - "Is the Elephant in the box? Hum a high pitch sound for Yes. Hum a low pitch sound for No."
+              - Laryngeal-Modulation-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
+                  - "Is the Elephant in the box? Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No."
+            """
         if set == "individual-test":
             if self.params.debug == True:
                 print("Slide Set: Test Individual")
@@ -103,13 +110,16 @@ class presenter:
         if set == "ssvep-test":
             print("Slide Set: SSVEP Test")
 
-            frequency = 7
+            frequency_Yes_Right = 12
+            frequency_No_Left = 7
             stim_size = int(self.psyPy_window.size[0] / 3)
-            SSVEP_Stim = visual.MovieStim3(self.psyPy_window, f'media/{frequency}Hz.avi', size=(stim_size, stim_size), pos=[0, 0])
+            SSVEP_Stim_Yes_Right = visual.MovieStim3(self.psyPy_window, f'media/{frequency_Yes_Right}Hz.avi', size=(stim_size, stim_size), pos=[stim_size * .75, 0])
+            SSVEP_Stim_No_Left = visual.MovieStim3(self.psyPy_window, f'media/{frequency_No_Left}Hz.avi', size=(stim_size, stim_size), pos=[stim_size * -.75, 0])
 
             j = 0
-            while SSVEP_Stim.status == 1 or j == 0:
-                SSVEP_Stim.draw()
+            while (SSVEP_Stim_No_Left.status == 1 or SSVEP_Stim_Yes_Right.status == 1) or j == 0:
+                SSVEP_Stim_No_Left.draw()
+                SSVEP_Stim_Yes_Right.draw()
                 self.psyPy_window.flip()
                 j+=1
 
