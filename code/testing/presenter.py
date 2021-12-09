@@ -53,6 +53,15 @@ class presenter:
             print(keys)
         return keys
 
+    # Wait for Key Press
+    def wait_for_keypress(self):
+        # present waiting stimulus
+        # (infinite while loop)
+            # get keys
+            # check keys
+
+        return
+
     # Mangage Presentation of A Set of Slides
     def present_slide_set(self, set="", kwarg=""):
         """
@@ -110,11 +119,27 @@ class presenter:
         if set == "ssvep-test":
             print("Slide Set: SSVEP Test")
 
+            # Instructions
+            # Add Autodrawn Stim explaing to press right-arrow to continue
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+            Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="For yes, focus on the right flashing box, and for no, focus on the left flashing box.")
+            Instruct_Stim.setAutoDraw(True)
+            self.psyPy_window.flip()
+            while True:
+                keys = self.get_keypress()
+                if 'right' in keys:
+                    Continue_Instruct_Stim.autoDraw = False
+                    Instruct_Stim.autoDraw = False
+                    self.psyPy_window.flip()
+                    break
+
+
             frequency_Yes_Right = 12
             frequency_No_Left = 7
             stim_size = int(self.psyPy_window.size[0] / 3)
-            SSVEP_Stim_Yes_Right = visual.MovieStim3(self.psyPy_window, f'media/{frequency_Yes_Right}Hz.avi', size=(stim_size, stim_size), pos=[stim_size * .75, 0])
-            SSVEP_Stim_No_Left = visual.MovieStim3(self.psyPy_window, f'media/{frequency_No_Left}Hz.avi', size=(stim_size, stim_size), pos=[stim_size * -.75, 0])
+            SSVEP_Stim_Yes_Right = visual.MovieStim3(self.psyPy_window, f'media/{frequency_Yes_Right}Hz.avi', size=(stim_size, stim_size), pos=[stim_size * .80, 0])
+            SSVEP_Stim_No_Left = visual.MovieStim3(self.psyPy_window, f'media/{frequency_No_Left}Hz.avi', size=(stim_size, stim_size), pos=[-stim_size * .80, 0])
 
             j = 0
             while (SSVEP_Stim_No_Left.status == 1 or SSVEP_Stim_Yes_Right.status == 1) or j == 0:

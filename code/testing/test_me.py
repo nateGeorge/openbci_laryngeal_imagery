@@ -28,7 +28,6 @@ if "PRSNT" in test:
 
 
     PRSNT.present_slide_set(set="ssvep-test")
-    # PRSNT.present_slide_set(set="multi-slide-test")
     PRSNT.end_present() # end presentation with a slide method
 
     if "CNCT" in test:
