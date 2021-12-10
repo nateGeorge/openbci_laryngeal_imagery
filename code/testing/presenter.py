@@ -63,19 +63,21 @@ class presenter:
         return
 
     # Mangage Presentation of A Set of Slides
-    def present_slide_set(self, set="", kwarg=""):
+    def present_slide_set(self, set="", elephant_ans=None, kwarg=""):
         """
         Run a set of slides then wait for key press to continue/exit
 
         Parameters:
           set: (str) the name of the slide set
+          elephant_ans: (bool) If True, the elephant question will be rendered such that the correct answer is True
           kwarg: (str) "--"-seperated keyword argument string for modifying slide sets
 
 
         #######  Test Sets ########
               - individual-test -- test the workflow for presenting an individual slide
               - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
-                  - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
+                - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
+              - elephant-question-test - test the functionality of the elephant question
               - ssvep-test -- test making the SSVEP stimulus with this set
               - multi-slide-test -- test the workflow with multiple stimuli sequentially
         #######  Instruction Sets ########
@@ -209,6 +211,35 @@ class presenter:
             time.sleep(1)
 
             #show SSVEP start time and duration
+
+        if set == "elephant-question-test":
+            # make elephant stim
+            Elephant_Stim = visual.ImageStim(self.psyPy_window, image=f'media/lemmling-2D-cartoon-elephant.jpg', mask=f'media/lemmling-2D-cartoon-elephant-transparency-mask.jpg', pos=((0, 0.25)), size=0.4)
+            Elephant_Stim.draw()
+
+            # make elephant question stim
+            Question_Stim = visual.TextStim(self.psyPy_window, text="Is the Elephant in the box?", pos=((0, 0.75)), color="red")
+            Question_Stim.draw()
+
+            # make rect stim (pos based on elephant_ans)
+            if elephant_ans == True:
+                Ans_Box = visual.Rect(self.psyPy_window, pos=((0, 0.25)), lineColor="red")
+                Ans_Box.draw()
+            elif elephant_ans == False:
+                Ans_Box = visual.Rect(self.psyPy_window, pos=((0, -0.25)), lineColor="red")
+                Ans_Box.draw()
+            else:
+                print("WARNING: elephant_ans was not set")
+            # render stimuli
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            # check for correct response
+            #   # incorrect response
+            #       # re-render the same elephant question
+            #   # correct response
+            #       # move forward to mock/real stimulus
+
 
         if set == "multi-slide-test":
 
