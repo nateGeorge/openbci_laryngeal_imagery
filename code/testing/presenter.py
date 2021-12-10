@@ -96,7 +96,7 @@ class presenter:
               - Motor-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
                   - "Is the Elephant in the box? Raise your right arm for Yes. Raise your left arm for No."
               - Motor-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
-                  - "Is the Elephant in the box? Imagin raising your right arm for Yes. Imagin raising your left arm for No."
+                  - "Is the Elephant in the box? Imagine raising your right arm for Yes. Imagine raising your left arm for No."
               - Laryngeal-Activity-Real -- Present Elephant Question Stimulus w/ appropriate response prompt
                   - "Is the Elephant in the box? Make a humming sound for Yes. Remain silent for No."
               - Laryngeal-Activity-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
@@ -212,7 +212,77 @@ class presenter:
             #show SSVEP start time and duration
 
         if set == "Motor-Real":
-            Instruction_Stim = visual.TextStim(self.psyPy_window, text="For yes, raise your right arm, and for no raise your left arm")
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Raise your right arm for Yes. Raise your left arm for No.")
+            Instruction_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(3)
+
+            Begin_Stim = visual.TextStim(self.psyPy_window, text="Begin")
+            Begin_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            self.psyPy_window.flip()
+            time.sleep(not_ssvep_response_time)
+
+        if set == "Motor-Imagined":
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine raising your right arm for Yes. Imagine raising your left arm for No.")
+            Instruction_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(3)
+
+            Begin_Stim = visual.TextStim(self.psyPy_window, text="Begin")
+            Begin_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            self.psyPy_window.flip()
+            time.sleep(not_ssvep_response_time)
+
+        if set == "Laryngeal-Activity-Real":
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Make a humming sound for Yes. Remain silent for No.")
+            Instruction_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(3)
+
+            Begin_Stim = visual.TextStim(self.psyPy_window, text="Begin")
+            Begin_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            self.psyPy_window.flip()
+            time.sleep(not_ssvep_response_time)
+
+        if set == "Laryngeal-Activity-Imagined":
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine making a humming sound for Yes. Remain silent for No.")
+            Instruction_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(3)
+
+            Begin_Stim = visual.TextStim(self.psyPy_window, text="Begin")
+            Begin_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            self.psyPy_window.flip()
+            time.sleep(not_ssvep_response_time)
+
+        if set == "Laryngeal-Modulation-Real":
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Hum a high pitch sound for Yes. Hum a low pitch sound for No.")
+            Instruction_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(3)
+
+            Begin_Stim = visual.TextStim(self.psyPy_window, text="Begin")
+            Begin_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            self.psyPy_window.flip()
+            time.sleep(not_ssvep_response_time)
+
+        if set == "Laryngeal-Modulation-Imagined":
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(3)
