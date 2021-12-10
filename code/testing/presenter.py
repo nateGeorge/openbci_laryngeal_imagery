@@ -63,13 +63,14 @@ class presenter:
         return
 
     # Mangage Presentation of A Set of Slides
-    def present_slide_set(self, set="", elephant_ans=None, kwarg=""):
+    def present_slide_set(self, set="", elephant_ans=None, wait_after=True, kwarg=""):
         """
         Run a set of slides then wait for key press to continue/exit
 
         Parameters:
           set: (str) the name of the slide set
           elephant_ans: (bool) If True, the elephant question will be rendered such that the correct answer is True
+          wait_after: (bool) If False, this method does not wait for a keypress at the end of the current slide set
           kwarg: (str) "--"-seperated keyword argument string for modifying slide sets
 
 
@@ -298,30 +299,28 @@ class presenter:
         if set == "ssvep":
             pass
 
-        while True:
-            Response_Key_Text_Prompt = "Press: 'x' to Exit; right arrow to Move Forward; left arrow to Go Back"
-            Response_Key_Text_Stim = visual.TextStim(win=self.psyPy_window, text=Response_Key_Text_Prompt, height=.04)
-            Response_Key_Text_Stim.draw()
-            self.psyPy_window.flip()
-            time.sleep(2)
-            keys = self.get_keypress()
-            print(keys)
-            # Check for Response Key
-            # If Key = x -> Exit
-            if 'x' in keys:
-                print('Found X Keys')
-                break
-            # If Key = right -> Move Forward
-            if 'right' in keys:
-                print('Found Right Keys')
-                # add one to placeholder
-                break
-            # If Key = left -> Move Backward (repeat instructions/trial)
-            if 'left' in keys:
-                print('Found Left Keys')
-                # subtract one from placeholder
-                break
-
-        # Test 2
-        self.get_keypress()
-        # End Test
+        # Wait for keypress at end of slide set
+        if wait_after:
+            while True:
+                Response_Key_Text_Prompt = "Press: 'x' to Exit; right arrow to Move Forward; left arrow to Go Back"
+                Response_Key_Text_Stim = visual.TextStim(win=self.psyPy_window, text=Response_Key_Text_Prompt, height=.04)
+                Response_Key_Text_Stim.draw()
+                self.psyPy_window.flip()
+                time.sleep(2)
+                keys = self.get_keypress()
+                print(keys)
+                # Check for Response Key
+                # If Key = x -> Exit
+                if 'x' in keys:
+                    print('Found X Keys')
+                    break
+                # If Key = right -> Move Forward
+                if 'right' in keys:
+                    print('Found Right Keys')
+                    # add one to placeholder
+                    break
+                # If Key = left -> Move Backward (repeat instructions/trial)
+                if 'left' in keys:
+                    print('Found Left Keys')
+                    # subtract one from placeholder
+                    break
