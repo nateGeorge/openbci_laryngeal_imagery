@@ -221,13 +221,19 @@ class presenter:
             Question_Stim = visual.TextStim(self.psyPy_window, text="Is the Elephant in the box?", pos=((0, 0.75)), color="red")
             Question_Stim.draw()
 
+            # make answering instructions stim
+            Answering_Instructions_Stim = visual.TextStim(self.psyPy_window, text="Press Y for Yes and N for No", pos=((0, -0.75)), height=0.06)
+            Answering_Instructions_Stim.draw()
+
             # make rect stim (pos based on elephant_ans)
             if elephant_ans == True:
                 Ans_Box = visual.Rect(self.psyPy_window, pos=((0, 0.25)), lineColor="red")
                 Ans_Box.draw()
+                cor_ans = "y" # Y stands for Yes the Elephant is in the box
             elif elephant_ans == False:
                 Ans_Box = visual.Rect(self.psyPy_window, pos=((0, -0.25)), lineColor="red")
                 Ans_Box.draw()
+                cor_ans = "n" # N stands for No the Elephant is not in the box
             else:
                 print("WARNING: elephant_ans was not set")
             # render stimuli
@@ -235,10 +241,29 @@ class presenter:
             time.sleep(1)
 
             # check for correct response
-            #   # incorrect response
-            #       # re-render the same elephant question
-            #   # correct response
-            #       # move forward to mock/real stimulus
+            while True:
+                keys = self.get_keypress()
+                # incorrect response
+                if ("y" in keys or "n" in keys) and (cor_ans not in keys):
+                    Incorrect_Stim = visual.TextStim(self.psyPy_window, text="Incorrect: Press Y for in the box and N for not in the box", color="red")
+                    Incorrect_Stim.draw()
+                    self.psyPy_window.flip()
+                    time.sleep(3)
+
+                    Elephant_Stim.draw()
+                    Question_Stim.draw()
+                    Answering_Instructions_Stim.draw()
+                    Ans_Box.draw()
+                    # re-render the same elephant question
+                    self.psyPy_window.flip()
+                # correct response
+                if cor_ans in keys:
+                    # move forward to mock/real stimulus
+                    Correct_Stim = visual.TextStim(self.psyPy_window, text="Correct")
+                    Correct_Stim.draw()
+                    self.psyPy_window.flip()
+                    time.sleep(1)
+                    break
 
 
         if set == "multi-slide-test":
@@ -269,6 +294,9 @@ class presenter:
             Img_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+
+        if set == "ssvep":
+            pass
 
         while True:
             Response_Key_Text_Prompt = "Press: 'x' to Exit; right arrow to Move Forward; left arrow to Go Back"
