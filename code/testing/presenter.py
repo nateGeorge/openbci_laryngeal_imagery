@@ -63,7 +63,7 @@ class presenter:
         return
 
     # Mangage Presentation of A Set of Slides
-    def present_slide_set(self, set="", elephant_ans=None, wait_after=True, kwarg=""):
+    def present_slide_set(self, set="", elephant_ans=None, wait_after=True, not_ssvep_response_time=5):
         """
         Run a set of slides then wait for key press to continue/exit
 
@@ -71,15 +71,13 @@ class presenter:
           set: (str) the name of the slide set
           elephant_ans: (bool) If True, the elephant question will be rendered such that the correct answer is True
           wait_after: (bool) If False, this method does not wait for a keypress at the end of the current slide set
-          kwarg: (str) "--"-seperated keyword argument string for modifying slide sets
+          not_ssvep_response_time: (int) How many seconds to allow participant to respond for; SSVEP is 5 seconds (length of media file) regardless of this parameter
 
 
         #######  Test Sets ########
               - individual-test -- test the workflow for presenting an individual slide
               - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
                 - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
-              - elephant-question-test - test the functionality of the elephant question
-              - ssvep-test -- test making the SSVEP stimulus with this set
               - multi-slide-test -- test the workflow with multiple stimuli sequentially
         #######  Instruction Sets ########
               - pre-exp -- Present the instructions leading up to the experiment
@@ -173,7 +171,7 @@ class presenter:
                           self.psyPy_window.flip()
                           break
 
-        if set == "ssvep-test":
+        if set == "SSVEP":
             print("Slide Set: SSVEP Test")
 
             # Instructions
@@ -213,7 +211,21 @@ class presenter:
 
             #show SSVEP start time and duration
 
-        if set == "elephant-question-test":
+        if set == "Motor-Real":
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="For yes, raise your right arm, and for no raise your left arm")
+            Instruction_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(3)
+
+            Begin_Stim = visual.TextStim(self.psyPy_window, text="Begin")
+            Begin_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+
+            self.psyPy_window.flip()
+            time.sleep(not_ssvep_response_time)
+
+        if set == "elephant-question":
             # make elephant stim
             Elephant_Stim = visual.ImageStim(self.psyPy_window, image=f'media/lemmling-2D-cartoon-elephant.jpg', mask=f'media/lemmling-2D-cartoon-elephant-transparency-mask.jpg', pos=((0, 0.25)), size=0.4)
             Elephant_Stim.draw()
