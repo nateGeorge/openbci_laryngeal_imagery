@@ -2,7 +2,7 @@ import dialog
 import presenter
 import connect
 
-debug = True
+debug = False
 test = ["PRSNT", "DLG", "CNCT"] # DLG - test dialogue boxes
                         # PRSNT - test slide
                         # CNCT - test connection
@@ -25,21 +25,24 @@ if "PRSNT" in test:
     if "CNCT" in test:
         cnct = connect.controller() # Set board Type for initial connection
         cnct.make_connection(brdType=dlg_settings["brd_type"], bt_port=dlg_settings["bt_port"], ip_port=dlg_settings["ip_port"], ip_address=dlg_settings["ip_addr"])
+        PRSNT.cnct = cnct
 
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
-    PRSNT.present_slide_set(set="SSVEP", wait_after=False)
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=False, wait_after=False)
-    PRSNT.present_slide_set(set="Motor-Real", wait_after=False)
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
-    PRSNT.present_slide_set(set="Motor-Imagined", wait_after=False)
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=False, wait_after=False)
-    PRSNT.present_slide_set(set="Laryngeal-Activity-Real", wait_after=False)
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
-    PRSNT.present_slide_set(set="Laryngeal-Activity-Imagined", wait_after=False)
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=False, wait_after=False)
-    PRSNT.present_slide_set(set="Laryngeal-Modulation-Real", wait_after=False)
-    PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
-    PRSNT.present_slide_set(set="Laryngeal-Modulation-Imagined", wait_after=False)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
+    epoch_info = PRSNT.present_slide_set(set="SSVEP", wait_after=False)
+    print("Check - Epoch Info: ")
+    print(epoch_info)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=False, wait_after=False)
+    # PRSNT.present_slide_set(set="Motor-Real", wait_after=False)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
+    # PRSNT.present_slide_set(set="Motor-Imagined", wait_after=False)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=False, wait_after=False)
+    # PRSNT.present_slide_set(set="Laryngeal-Activity-Real", wait_after=False)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
+    # PRSNT.present_slide_set(set="Laryngeal-Activity-Imagined", wait_after=False)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=False, wait_after=False)
+    # PRSNT.present_slide_set(set="Laryngeal-Modulation-Real", wait_after=False)
+    # PRSNT.present_slide_set(set="elephant-question", elephant_ans=True, wait_after=False)
+    # PRSNT.present_slide_set(set="Laryngeal-Modulation-Imagined", wait_after=False)
     PRSNT.end_present() # end presentation with a slide method
 
     if "CNCT" in test:

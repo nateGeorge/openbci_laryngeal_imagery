@@ -22,11 +22,12 @@ class presentation_params:
 
 class presenter:
     # Object for Presenting PsychoPy Slides with Common Features
-    def __init__(self, params, dlg_settings):
+    def __init__(self, params, dlg_settings, cnct=None):
         self.params = params
         self.cur_stims = [] # current stims
         self.placeholder = self.params.placeholder
         self.dlg_settings = dlg_settings
+        self.cnct = cnct
         if self.params.debug == True:
             print("Presenter")
 
@@ -172,7 +173,8 @@ class presenter:
                           break
 
         if set == "SSVEP":
-            print("Slide Set: SSVEP Test")
+            epoch_label = "ssvep"
+            print("epoch_label: " + epoch_label)
 
             # Instructions
             # Add Autodrawn Stim explaing to press right-arrow to continue
@@ -200,8 +202,12 @@ class presenter:
             while (SSVEP_Stim_No_Left.status == 1 or SSVEP_Stim_Yes_Right.status == 1) or j == 0:
                 SSVEP_Stim_No_Left.draw()
                 SSVEP_Stim_Yes_Right.draw()
+                if j==0:
+                    start_time = time.time() - self.cnct.exp_start_time
+                    print(start_time)
                 self.psyPy_window.flip()
                 j+=1
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
             Done_Text_Stim = visual.TextStim(win=self.psyPy_window, text="SSVEP Done")
             Done_Text_Stim.draw()
@@ -212,6 +218,9 @@ class presenter:
             #show SSVEP start time and duration
 
         if set == "Motor-Real":
+            epoch_label = "mi-a" # motor imagery - actual
+            print("epoch_label: " + epoch_label)
+
             Instruction_Stim = visual.TextStim(self.psyPy_window, text="Raise your right arm for Yes. Raise your left arm for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
@@ -226,6 +235,9 @@ class presenter:
             time.sleep(not_ssvep_response_time)
 
         if set == "Motor-Imagined":
+            epoch_label = "mi-i" # motor imagery - imagined
+            print("epoch_label: " + epoch_label)
+
             Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine raising your right arm for Yes. Imagine raising your left arm for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
@@ -240,6 +252,9 @@ class presenter:
             time.sleep(not_ssvep_response_time)
 
         if set == "Laryngeal-Activity-Real":
+            epoch_label = "lmi-a" # laryngeal motor imagery - actual
+            print("epoch_label: " + epoch_label)
+
             Instruction_Stim = visual.TextStim(self.psyPy_window, text="Make a humming sound for Yes. Remain silent for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
@@ -254,6 +269,9 @@ class presenter:
             time.sleep(not_ssvep_response_time)
 
         if set == "Laryngeal-Activity-Imagined":
+            epoch_label = "lmi-i" # laryngeal motor imagery - imagined
+            print("epoch_label: " + epoch_label)
+
             Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine making a humming sound for Yes. Remain silent for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
@@ -268,6 +286,9 @@ class presenter:
             time.sleep(not_ssvep_response_time)
 
         if set == "Laryngeal-Modulation-Real":
+            epoch_label = "lmi-mod-a" # laryngeal motor imagery - modulation - actual
+            print("epoch_label: " + epoch_label)
+
             Instruction_Stim = visual.TextStim(self.psyPy_window, text="Hum a high pitch sound for Yes. Hum a low pitch sound for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
@@ -282,6 +303,9 @@ class presenter:
             time.sleep(not_ssvep_response_time)
 
         if set == "Laryngeal-Modulation-Imagined":
+            epoch_label = "lmi-mod-i" # laryngeal motor imagery - modulation - imagined
+            print("epoch_label: " + epoch_label)
+
             Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
@@ -378,9 +402,6 @@ class presenter:
             self.psyPy_window.flip()
             time.sleep(1)
 
-        if set == "ssvep":
-            pass
-
         # Wait for keypress at end of slide set
         if wait_after:
             while True:
@@ -406,3 +427,10 @@ class presenter:
                     print('Found Left Keys')
                     # subtract one from placeholder
                     break
+
+        if set in ["SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]
+            epoch_info = {"condition_start_time": start_time,
+                          "duration": duration,
+                          "label": epoch_label}
+
+        return epoch_info

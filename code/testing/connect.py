@@ -47,7 +47,10 @@ class controller:
         # Connect data stream
         self.cnct.board_obj.prepare_session()
         self.cnct.board_obj.start_stream()
+        self.exp_start_time = time.time()
+        print("Experiment Start Time: " + str(self.exp_start_time))
         print("New Connection")
+        return self.exp_start_time
 
     def end_connection(self, save=True, save_as="unamed_file", ext=".fif.gz"):
         # End the Board Connection
