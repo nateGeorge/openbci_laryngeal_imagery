@@ -230,9 +230,12 @@ class presenter:
             Begin_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+            start_time = time.time() - self.cnct.exp_start_time
 
             self.psyPy_window.flip()
             time.sleep(not_ssvep_response_time)
+
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
         if set == "Motor-Imagined":
             epoch_label = "mi-i" # motor imagery - imagined
@@ -247,9 +250,12 @@ class presenter:
             Begin_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+            start_time = time.time() - self.cnct.exp_start_time
 
             self.psyPy_window.flip()
             time.sleep(not_ssvep_response_time)
+
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
         if set == "Laryngeal-Activity-Real":
             epoch_label = "lmi-a" # laryngeal motor imagery - actual
@@ -264,9 +270,12 @@ class presenter:
             Begin_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+            start_time = time.time() - self.cnct.exp_start_time
 
             self.psyPy_window.flip()
             time.sleep(not_ssvep_response_time)
+
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
         if set == "Laryngeal-Activity-Imagined":
             epoch_label = "lmi-i" # laryngeal motor imagery - imagined
@@ -281,9 +290,12 @@ class presenter:
             Begin_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+            start_time = time.time() - self.cnct.exp_start_time
 
             self.psyPy_window.flip()
             time.sleep(not_ssvep_response_time)
+
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
         if set == "Laryngeal-Modulation-Real":
             epoch_label = "lmi-mod-a" # laryngeal motor imagery - modulation - actual
@@ -298,9 +310,12 @@ class presenter:
             Begin_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+            start_time = time.time() - self.cnct.exp_start_time
 
             self.psyPy_window.flip()
             time.sleep(not_ssvep_response_time)
+
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
         if set == "Laryngeal-Modulation-Imagined":
             epoch_label = "lmi-mod-i" # laryngeal motor imagery - modulation - imagined
@@ -315,9 +330,12 @@ class presenter:
             Begin_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
+            start_time = time.time() - self.cnct.exp_start_time
 
             self.psyPy_window.flip()
             time.sleep(not_ssvep_response_time)
+
+            duration = time.time() - start_time - self.cnct.exp_start_time
 
         if set == "elephant-question":
             # make elephant stim
@@ -428,9 +446,11 @@ class presenter:
                     # subtract one from placeholder
                     break
 
-        if set in ["SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]
+        if set in ["SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
                           "label": epoch_label}
+        else:
+            epoch_info = None
 
         return epoch_info
