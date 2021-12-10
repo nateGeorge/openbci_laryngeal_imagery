@@ -116,6 +116,60 @@ class presenter:
 
             time.sleep(1)
 
+        if set == "pre-exp":
+                instrctsTxt_1 = """As you go through this experiment you
+                will answer yes or no to a simple question.
+                You will see an elephant pop up on the screen.
+                The elephant will either be inside of a box or not.
+                """
+                instrctsTxt_2 = """You will then be asked: 'Was the elephant
+                in the box?' Please click the right arrow (→) to respond yes
+                or the left arrow (←) to respond no.
+                """
+                instrctsTxt_3 = """Only after you have responded correctly will
+                you respond again by following the instructions for indicating yes or no.
+                """
+                instrctsTxt_4 = """WARNING: This experimental protocol contains flashing lights that may pose a danger to individuals who suffer from epilepsy. If you are dangerously sensitive to rapidly flashing lights, please stop the experiment now by pressing the 'x' key.
+                """
+
+                instrct_stim_1 = visual.TextStim(self.psyPy_window, text=instrctsTxt_1)
+                instrct_stim_2 = visual.TextStim(self.psyPy_window, text=instrctsTxt_2)
+                instrct_stim_3 = visual.TextStim(self.psyPy_window, text=instrctsTxt_3)
+                instrct_stim_4 = visual.TextStim(self.psyPy_window, text=instrctsTxt_4)
+
+                instructions = [instrct_stim_1, instrct_stim_2, instrct_stim_3, instrct_stim_4]
+                instructions[0].setAutoDraw(True)
+
+                Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+                Continue_Instruct_Stim.setAutoDraw(True)
+                self.psyPy_window.flip()
+
+                i = 0
+                while True:
+                    # Check for right arrow key
+                    keys = self.get_keypress()
+                    # if right arrow is pressed
+                    if 'right' in keys:
+                        # unset autoDraw for current stim
+                        instructions[i].setAutoDraw(False)
+
+                        # if currentStim is not the last stim
+                        if i < len(instructions) - 1:
+                          # set autoDraw for next stim
+                          instructions[i+1].setAutoDraw(True)
+                          # flip window
+                          self.psyPy_window.flip()
+                          # increment counter
+                          i += 1
+
+                        # if currentStim is the last stim
+                        else:
+                          # unset autoDraw for Continue_Instruct_Stim
+                          Continue_Instruct_Stim.setAutoDraw(False)
+                          # flip window
+                          self.psyPy_window.flip()
+                          break
+
         if set == "ssvep-test":
             print("Slide Set: SSVEP Test")
 
