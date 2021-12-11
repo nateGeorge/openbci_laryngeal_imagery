@@ -90,7 +90,7 @@ class presenter:
               - pre-Laryngeal-Modulation-Real -- Present the instructions leading up to Laryngeal Modulation Real trial
               - pre-Laryngeal-Modulation-Imagined -- Present the instructions leading up to Laryngeal Modulation Imagined trial
         #######  Trial Sets ########
-              - Check -- Present Elephant Question Stimulus and ask the participant to respond with the keyboard
+              - Elephant-Question -- Present Elephant Question Stimulus and ask the participant to respond with the keyboard; require correct answer
                   - "Is the Elephant in the box? Click the 'y' for yes or 'n' for no."
               - SSVEP -- Present flashing stimulus
                   - "Is the Elephant in the box? Look at the flashing light on the right for yes. Look at the flashing light on the left for no."
@@ -107,6 +107,8 @@ class presenter:
               - Laryngeal-Modulation-Imagined -- Present Elephant Question Stimulus w/ appropriate response prompt
                   - "Is the Elephant in the box? Imagine humming a high pitch sound for Yes. Imagine humming a low pitch sound for No."
             """
+        # Test Sets ############################################################
+
         if set == "individual-test":
             if self.params.debug == True:
                 print("Slide Set: Test Individual")
@@ -117,6 +119,8 @@ class presenter:
             self.psyPy_window.flip()
 
             time.sleep(1)
+
+        # Instruction Sets #####################################################
 
         if set == "pre-exp":
                 instrctsTxt_1 = """As you go through this experiment you
@@ -171,6 +175,64 @@ class presenter:
                           # flip window
                           self.psyPy_window.flip()
                           break
+
+        if set == "pre-SSVEP":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by focusing on one of two lights flashing on the screen"
+            Instruction_2 = "Focus to the Right to answer Yes"
+            Instruction_3 = "Focus to the Left to answer No"
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+                      print("Not the last stim")
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      print("Last stim")
+                      break
+
+            self.psyPy_window.flip()
+
+
+        # Trial Sets ###########################################################
 
         if set == "SSVEP":
             epoch_label = "ssvep"
@@ -337,7 +399,7 @@ class presenter:
 
             duration = time.time() - start_time - self.cnct.exp_start_time
 
-        if set == "elephant-question":
+        if set == "Elephant-Question":
             # make elephant stim
             Elephant_Stim = visual.ImageStim(self.psyPy_window, image=f'media/lemmling-2D-cartoon-elephant.jpg', mask=f'media/lemmling-2D-cartoon-elephant-transparency-mask.jpg', pos=((0, 0.25)), size=0.4)
             Elephant_Stim.draw()
