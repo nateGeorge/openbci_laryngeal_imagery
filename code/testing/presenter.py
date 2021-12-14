@@ -1,4 +1,5 @@
 # imports - base
+import sys
 import time
 from psychopy import visual, core, event, sound
 from psychopy.event import Mouse, getKeys
@@ -80,8 +81,10 @@ class presenter:
               - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
                 - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
               - multi-slide-test -- test the workflow with multiple stimuli sequentially
+              - alpha-check-test -- test the workflow for quality checking alpha waves in a live scenario
         #######  Instruction Sets ########
               - pre-exp -- Present the instructions leading up to the experiment
+              - pre-alpha-check - instructions for the alpha wave check
               - pre-SSVEP -- Present the instructions leading up to SSVEP
               - pre-Motor-Real -- Present the instructions leading up to the Motor-Activity trial
               - pre-Motor-Imagined -- Present the instructions leading up to the Motor-Imagery trial
@@ -119,6 +122,49 @@ class presenter:
             self.psyPy_window.flip()
 
             time.sleep(1)
+
+        if set == "alpha-check-test":
+            # provide instructions
+            Instruction_Text_1 = "Close your eyes when you hear the beep"
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_Text_1)
+            Instruct_Stim_1.draw()
+            self.psyPy_window.flip()
+
+            time.sleep(1)
+
+            # prompt user to close their eyes (beep sound)
+            c = sound.Sound('C', 1)
+            g = sound.Sound('G', 1)
+            c.play()
+            start_time_closed = time.time() - self.cnct.exp_start_time
+            time.sleep(5)
+
+            # provide instructions to keep eyes open
+            Instruction_Text_2 = "Keep eyes open until the next beep"
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_Text_2)
+            Instruct_Stim_2.draw()
+            self.psyPy_window.flip()
+
+            # prompt user to open their eyes (beep sound)
+            g.play()
+            start_time_open = time.time() - self.cnct.exp_start_time
+            duration_closed = start_time_open - start_time_closed
+            time.sleep(5)
+
+            # done + closing beep
+            c.play()
+            duration_open = time.time() - start_time_open - self.cnct.exp_start_time
+            Done_Stim = visual.TextStim(self.psyPy_window, text="Done")
+            Done_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+            self.psyPy_window.flip()
+
+            # get data from board
+
+            # calculate fft of data
+
+            # compare 10 Hz power with eyes closed to 10 Hz power without eyes closed
 
         # Instruction Sets #####################################################
 
@@ -176,6 +222,48 @@ class presenter:
                           self.psyPy_window.flip()
                           break
 
+        if set == "pre-alpha-check":
+            instrctsTxt_1 = "In this section your EEG will be record with your eyes open, then closed."
+            instrctsTxt_2 = "When you hear the first beep, close your eyes until you hear the second beep."
+            instrctsTxt_3 = "When you hear the second beep, keep your eyes open until you hear the third beep"
+
+            instrct_stim_1 = visual.TextStim(self.psyPy_window, text=instrctsTxt_1)
+            instrct_stim_2 = visual.TextStim(self.psyPy_window, text=instrctsTxt_2)
+            instrct_stim_3 = visual.TextStim(self.psyPy_window, text=instrctsTxt_3)
+
+            instructions = [instrct_stim_1, instrct_stim_2, instrct_stim_3]
+            instructions[0].setAutoDraw(True)
+
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+            self.psyPy_window.flip()
+
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
         if set == "pre-SSVEP":
             # make text instructions to present
             Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by focusing on one of two lights flashing on the screen"
@@ -217,7 +305,6 @@ class presenter:
                       self.psyPy_window.flip()
                       # increment counter
                       i += 1
-                      print("Not the last stim")
 
                     # if currentStim is the last stim
                     else:
@@ -226,11 +313,345 @@ class presenter:
                       Continue_Instruct_Stim.setAutoDraw(False)
                       # flip window
                       self.psyPy_window.flip()
-                      print("Last stim")
                       break
 
             self.psyPy_window.flip()
 
+        if set == "pre-Motor-Real":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by raising your right or left arm."
+            Instruction_2 = "Raise your Right arm to answer Yes"
+            Instruction_3 = "Raise your Left arm to answer No"
+            Instruction_4 = "Remember to hold your arm raised until each trial is done"
+
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+            Instruct_Stim_4 = visual.TextStim(self.psyPy_window, text=Instruction_4)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3, Instruct_Stim_4]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+            self.psyPy_window.flip()
+
+        if set == "pre-Motor-Imagined":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by imagining raising your right or left arm."
+            Instruction_2 = "Imagine raising your Right arm to answer Yes"
+            Instruction_3 = "Imagine raising your Left arm to answer No"
+            Instruction_4 = "Remember to imagine your arm raised until each trial is done"
+
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+            Instruct_Stim_4 = visual.TextStim(self.psyPy_window, text=Instruction_4)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3, Instruct_Stim_4]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+            self.psyPy_window.flip()
+
+        if set == "pre-Laryngeal-Activity-Real":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by humming or remaing silent."
+            Instruction_2 = "Hum a constant sound to answer Yes"
+            Instruction_3 = "Remain silent to answer No"
+            Instruction_4 = "Remember to hum or remain silent until each trial is done"
+
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+            Instruct_Stim_4 = visual.TextStim(self.psyPy_window, text=Instruction_4)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3, Instruct_Stim_4]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+            self.psyPy_window.flip()
+
+        if set == "pre-Laryngeal-Activity-Imagined":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by imagining making a humming sound or remaing silent."
+            Instruction_2 = "Imagine humming a constant sound to answer Yes"
+            Instruction_3 = "Remain silent to answer No"
+            Instruction_4 = "Remember to imgaine humming or remain silent until each trial is done"
+
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+            Instruct_Stim_4 = visual.TextStim(self.psyPy_window, text=Instruction_4)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3, Instruct_Stim_4]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+            self.psyPy_window.flip()
+
+        if set == "pre-Laryngeal-Modulation-Real":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by making a high-pitched humming sound or a low-pitched humming sound."
+            Instruction_2 = "Make a high-pitched humming sound to answer Yes"
+            Instruction_3 = "Make a low-pitched humming sound to answer No"
+            Instruction_4 = "Remember to hum until each trial is done"
+
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+            Instruct_Stim_4 = visual.TextStim(self.psyPy_window, text=Instruction_4)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3, Instruct_Stim_4]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+            self.psyPy_window.flip()
+
+        if set == "Laryngeal-Modulation-Imagined":
+            # make text instructions to present
+            Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by imagining making a high-pitched humming sound or a low-pitched humming sound."
+            Instruction_2 = "Imagine making a high-pitched humming sound to answer Yes"
+            Instruction_3 = "Imagine making a low-pitched humming sound to answer No"
+            Instruction_4 = "Remember to imagine humming until each trial is done"
+
+
+            # convert text to TextStim's
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_1)
+            Instruct_Stim_2 = visual.TextStim(self.psyPy_window, text=Instruction_2)
+            Instruct_Stim_3 = visual.TextStim(self.psyPy_window, text=Instruction_3)
+            Instruct_Stim_4 = visual.TextStim(self.psyPy_window, text=Instruction_4)
+
+            instructions = [Instruct_Stim_1, Instruct_Stim_2, Instruct_Stim_3, Instruct_Stim_4]
+            instructions[0].setAutoDraw(True)
+
+            # Add keyPress to continue feature
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+
+            # show first instruction
+            self.psyPy_window.flip()
+
+
+            # present TextStim's in order
+            # Loop through stimuli - pause each loop waiting for a keyPress to continue
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      instructions[i].setAutoDraw(False)
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+            self.psyPy_window.flip()
 
         # Trial Sets ###########################################################
 
@@ -496,6 +917,9 @@ class presenter:
                 # If Key = x -> Exit
                 if 'x' in keys:
                     print('Found X Keys')
+                    self.psyPy_window.close()
+                    self.cnct.end_connection(save=True)
+                    sys.exit(0)
                     break
                 # If Key = right -> Move Forward
                 if 'right' in keys:

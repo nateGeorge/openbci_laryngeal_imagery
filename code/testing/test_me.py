@@ -27,7 +27,9 @@ if "PRSNT" in test:
         cnct.make_connection(brdType=dlg_settings["brd_type"], bt_port=dlg_settings["bt_port"], ip_port=dlg_settings["ip_port"], ip_address=dlg_settings["ip_addr"])
         PRSNT.cnct = cnct
 
-    PRSNT.present_slide_set(set="pre-SSVEP")
+    PRSNT.present_slide_set(set="pre-alpha-check")
+    PRSNT.present_slide_set(set="alpha-check-test")
+
     # epoch_info = PRSNT.present_slide_set(set="SSVEP", wait_after=False)
     # print("Check - Epoch Info: ")
     # print(epoch_info)
