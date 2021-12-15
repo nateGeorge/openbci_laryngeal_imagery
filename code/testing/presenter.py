@@ -6,6 +6,10 @@ from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
 from psychopy import gui
 
+# imports - other
+import matplotlib.pyplot as plt
+import numpy as np
+
 # imports - homemade
 import connect
 
@@ -147,20 +151,49 @@ class presenter:
 
             # prompt user to open their eyes (beep sound)
             g.play()
+
             start_time_open = time.time() - self.cnct.exp_start_time
             duration_closed = start_time_open - start_time_closed
+
+            # get last (duration_closed) seconds of data from board - alpha should be present
+            data_closed = self.cnct.cnct.board_obj.get_current_board_data(int(duration_closed * self.cnct.cnct.sfreq))[0]
+            print(self.cnct)
+
+
             time.sleep(5)
 
             # done + closing beep
             c.play()
+            # get data from board
+
             duration_open = time.time() - start_time_open - self.cnct.exp_start_time
+
+            # get last (duration_open) seconds of data from board - alpha should not be present
+            data_open = self.cnct.cnct.board_obj.get_current_board_data(int(duration_open * self.cnct.cnct.sfreq))[0]
+            # print(self.cnct.cnct.board_obj)
+
+
             Done_Stim = visual.TextStim(self.psyPy_window, text="Done")
             Done_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(1)
             self.psyPy_window.flip()
 
-            # get data from board
+            # plot the data
+            X = np.linspace(0, int(len(data_closed)/self.cnct.cnct.sfreq), int(len(data_closed)))
+            plt.plot(X, data_closed)
+
+            X = np.linspace(0, int(len(data_open)/self.cnct.cnct.sfreq), int(len(data_open)))
+            plt.plot(X, data_open)
+            plt.show()
+
+            # plot_closed.show(title="Eyes Closed")
+            # plot_open.show(title="Eyes Open")
+
+            # set up epoch info
+            epoch_label = ["alpha-closed", "alpha-open"]
+            start_time = [start_time_closed, start_time_open]
+            duration = [duration_closed, duration_open]
 
             # calculate fft of data
 
@@ -932,7 +965,7 @@ class presenter:
                     # subtract one from placeholder
                     break
 
-        if set in ["SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
+        if set in ["alpha-check-test", "SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
                           "label": epoch_label}
