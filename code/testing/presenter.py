@@ -181,14 +181,16 @@ class presenter:
 
             # plot the data
             X = np.linspace(0, int(len(data_closed)/self.cnct.cnct.sfreq), int(len(data_closed)))
+            print("Len of data_closed: " + str(len(data_closed)))
             plt.plot(X, data_closed)
-
-            X = np.linspace(0, int(len(data_open)/self.cnct.cnct.sfreq), int(len(data_open)))
-            plt.plot(X, data_open)
+            plt.title("Eyes Closed")
             plt.show()
 
-            # plot_closed.show(title="Eyes Closed")
-            # plot_open.show(title="Eyes Open")
+            X = np.linspace(0, int(len(data_open)/self.cnct.cnct.sfreq), int(len(data_open)))
+            print("Len of data_open: " + str(len(data_open)))
+            plt.plot(X, data_open)
+            plt.title("Eyes Open")
+            plt.show()
 
             # set up epoch info
             epoch_label = ["alpha-closed", "alpha-open"]
