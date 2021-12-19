@@ -28,7 +28,8 @@ if "PRSNT" in test:
         PRSNT.cnct = cnct
 
     PRSNT.present_slide_set(set="pre-alpha-check")
-    PRSNT.present_slide_set(set="alpha-check-test")
+    epoch_info, alpha_ratio = PRSNT.present_slide_set(set="alpha-check-test")
+    print("I did it! The alpha ratio is: " + str(alpha_ratio))
 
     # epoch_info = PRSNT.present_slide_set(set="SSVEP", wait_after=False)
     # print("Check - Epoch Info: ")

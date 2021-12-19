@@ -1,7 +1,7 @@
 # imports - base
 import sys
 import time
-from psychopy import visual, core, event, sound
+from psychopy import visual, core, event, sound, gui
 from psychopy.event import Mouse, getKeys
 from psychopy.visual import Window
 from psychopy import gui
@@ -9,6 +9,7 @@ from psychopy import gui
 # imports - other
 import matplotlib.pyplot as plt
 import numpy as np
+from pandas import DataFrame as df
 
 # imports - homemade
 import connect
@@ -198,8 +199,38 @@ class presenter:
             duration = [duration_closed, duration_open]
 
             # calculate fft of data
+            timestep = 1/self.cnct.cnct.sfreq
+            fft = df()
+            exp = 1
+            while 2**exp < len(data_closed):
+                NFFT = 2**exp
+                exp += 1
+            # fft['Frequency'] = np.fft.fftfreq(NFFT)
+            # fft['Frequency'] = np.fft.fftshift(fft['Frequency'])
+            # fft = fft.query('Frequency>=0').mul(self.cnct.cnct.sfreq)
+            fft['Eyes Closed Alpha PSD'] = (np.real(np.fft.fft(data_closed, n=NFFT))**2)[8:13] # analyzing channel 0 for now
+            fft['Eyes Open Alpha PSD'] = (np.real(np.fft.fft(data_open, n=NFFT))**2)[8:13]
+
 
             # compare 10 Hz power with eyes closed to 10 Hz power without eyes closed
+
+            #   # Get average FFT between 8 and 13 Hz
+            avg_alpha_power_closed = np.mean(fft['Eyes Closed Alpha PSD']) # alpha-band: 8 to 13 Hz
+            avg_alpha_power_open = np.mean(fft['Eyes Open Alpha PSD']) # alpha-band: 8 to 13 Hz
+
+            # Get user to confirm that alpha waves appear correct
+            print("Eyes Closed (Alpha): " + str(avg_alpha_power_closed))
+            print("Eyes Open (Alpha): " + str(avg_alpha_power_open))
+
+            confirm_dlg = gui.Dlg(title='Is the Alpha Band Activity Reasonable?')
+            confirm_dlg.addText('Eyes-Closed Alpha wave power ( ' + str(avg_alpha_power_closed) + ' ) is ' + str(avg_alpha_power_closed/avg_alpha_power_open) + ' x Eyes-open Alpha wave power (' + str(avg_alpha_power_open) + ')')
+            confirm_dlg.addField("Confirm Alpha-band Activity?", False)
+            confirm = confirm_dlg.show()[0]
+            print("Did I get True (I should)?")
+            print("Check: " + str(confirm))
+
+            alpha_ratio = avg_alpha_power_closed/avg_alpha_power_open # ratio of present alpha waves to not present
+
 
         # Instruction Sets #####################################################
 
@@ -971,6 +1002,8 @@ class presenter:
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
                           "label": epoch_label}
+            if set == "alpha-check-test":
+                return epoch_info, alpha_ratio
         else:
             epoch_info = None
 
