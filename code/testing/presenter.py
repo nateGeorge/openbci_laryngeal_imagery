@@ -86,7 +86,7 @@ class presenter:
               - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
                 - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
               - multi-slide-test -- test the workflow with multiple stimuli sequentially
-              - alpha-check-test -- test the workflow for quality checking alpha waves in a live scenario
+              - alpha-check -- checking alpha waves
         #######  Instruction Sets ########
               - pre-exp -- Present the instructions leading up to the experiment
               - pre-alpha-check - instructions for the alpha wave check
@@ -128,7 +128,7 @@ class presenter:
 
             time.sleep(1)
 
-        if set == "alpha-check-test":
+        if set == "alpha-check":
             # provide instructions
             Instruction_Text_1 = "Close your eyes when you hear the beep"
             Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_Text_1)
@@ -1002,8 +1002,10 @@ class presenter:
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
                           "label": epoch_label}
-            if set == "alpha-check-test":
+            self.cnct.cnct.annotations.append(epoch_info)
+            if set == "alpha-check":
                 return epoch_info, alpha_ratio
+
         else:
             epoch_info = None
 

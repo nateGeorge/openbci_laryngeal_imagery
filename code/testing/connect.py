@@ -12,6 +12,7 @@ class connection:
         self.board_obj = board
         self.sfreq = sfreq
         self.data_buffer = []
+        self.annotations = []
 
 
 # controller (object)
@@ -75,6 +76,23 @@ class controller:
             raw = mne.io.RawArray(rawData[1:17], info)
             # create annotations object (later)
             # set annotations/attach annotations to raw mne object (later)
+            onsets_list = []
+            durations_list = []
+            label_list = []
+            for i in range(len(self.cnct.annotations)):
+                if self.cnct.annotations[i]["label"] == "alpha-check":
+                    for j in range(len(self.cnct.annotations[i]["condition_start_time"])):
+                        onsets_list.append(self.cnct.annotations[i]["condition_start_time"][j])
+                        durations_list.append(self.cnct.annotations[i]["duration"][j])
+                        label_list.append(self.cnct.annotations[i]["label"][j])
+                else:
+                    onsets_list.append(self.cnct.annotations[i]["condition_start_time"])
+                    durations_list.append(self.cnct.annotations[i]["duration"])
+                    label_list.append(self.cnct.annotations[i]["label"])
+            print(onsets_list)
+            annot = mne.Annotations(onsets_list, durations_list, label_list)
+            raw.set_annotations(annot)
+
             # set mne channel location montage (standard_1020) and attach to raw mne object
             montage = mne.channels.make_standard_montage('standard_1020')
             # save raw object as MNE fif file
