@@ -86,7 +86,9 @@ class presenter:
               - individual-test-w-xconnectx -- test the workflow for presenting an individual slide and connect the recording EEG device
                 - previously individual-test-w-connect; changed to xconnectx to reflect that connection is no longer made in the presenter object and this slide set has been minimally changed
               - multi-slide-test -- test the workflow with multiple stimuli sequentially
-              - alpha-check -- checking alpha waves
+              - alpha-check-test -- test the workflow for checking alpha waves; eyes open and closed; returns epoch_info values as (1, 2) arrays
+              - alpha-check-open -- check alpha waves when particpant eyes are open
+              - alpha-check-closed -- check alpha waves when particpant eyes are closed
         #######  Instruction Sets ########
               - pre-exp -- Present the instructions leading up to the experiment
               - pre-alpha-check - instructions for the alpha wave check
@@ -128,7 +130,7 @@ class presenter:
 
             time.sleep(1)
 
-        if set == "alpha-check":
+        if set == "alpha-check-test":
             # provide instructions
             Instruction_Text_1 = "Close your eyes when you hear the beep"
             Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_Text_1)
@@ -231,6 +233,129 @@ class presenter:
 
             alpha_ratio = avg_alpha_power_closed/avg_alpha_power_open # ratio of present alpha waves to not present
 
+        if set == "alpha-check-closed":
+            # provide instructions
+            Instruction_Text_1 = "Close your eyes when you hear the beep"
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_Text_1)
+            Instruct_Stim_1.draw()
+            self.psyPy_window.flip()
+
+            time.sleep(1)
+
+            # prompt user to close their eyes (beep sound)
+            c = sound.Sound('C', 1)
+            g = sound.Sound('G', 1)
+            c.play()
+            start_time_closed = time.time() - self.cnct.exp_start_time
+            time.sleep(5)
+
+            # prompt user to open their eyes (beep sound)
+            g.play()
+
+            start_time_open = time.time() - self.cnct.exp_start_time
+            duration_closed = start_time_open - start_time_closed
+
+            # get last (duration_closed) seconds of data from board - alpha should be present
+            data_closed = self.cnct.cnct.board_obj.get_current_board_data(int(duration_closed * self.cnct.cnct.sfreq))[0]
+            print(self.cnct)
+            # get data from board
+
+
+            Done_Stim = visual.TextStim(self.psyPy_window, text="Done")
+            Done_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+            self.psyPy_window.flip()
+
+            # plot the data
+            X = np.linspace(0, int(len(data_closed)/self.cnct.cnct.sfreq), int(len(data_closed)))
+            print("Len of data_closed: " + str(len(data_closed)))
+            plt.plot(X, data_closed)
+            plt.title("Eyes Closed")
+            plt.show()
+
+            # set up epoch info
+            epoch_label = "alpha-closed"
+            start_time = start_time_closed
+            duration = duration_closed
+
+            # calculate fft of data
+            timestep = 1/self.cnct.cnct.sfreq
+            fft = df()
+            exp = 1
+            while 2**exp < len(data_closed):
+                NFFT = 2**exp
+                exp += 1
+            # fft['Frequency'] = np.fft.fftfreq(NFFT)
+            # fft['Frequency'] = np.fft.fftshift(fft['Frequency'])
+            # fft = fft.query('Frequency>=0').mul(self.cnct.cnct.sfreq)
+            fft['Eyes Closed Alpha PSD'] = (np.real(np.fft.fft(data_closed, n=NFFT))**2)[8:13] # analyzing channel 0 for now
+
+            #   # Get average FFT between 8 and 13 Hz
+            avg_alpha_power_closed = np.mean(fft['Eyes Closed Alpha PSD']) # alpha-band: 8 to 13 Hz
+
+            # Get user to confirm that alpha waves appear correct
+            print("Eyes Closed (Alpha): " + str(avg_alpha_power_closed))
+
+        if set == "alpha-check-open":
+            # provide instructions
+            Instruction_Text_1 = "Keep your eyes open when you hear the beep"
+            Instruct_Stim_1 = visual.TextStim(self.psyPy_window, text=Instruction_Text_1)
+            Instruct_Stim_1.draw()
+            self.psyPy_window.flip()
+
+            time.sleep(1)
+
+            # prompt user to close their eyes (beep sound)
+            c = sound.Sound('C', 1)
+            g = sound.Sound('G', 1)
+            c.play()
+            start_time = time.time() - self.cnct.exp_start_time
+            time.sleep(5)
+
+            # prompt user to open their eyes (beep sound)
+            g.play()
+
+            stop_time = time.time() - self.cnct.exp_start_time
+            duration =  stop_time - start_time
+
+            # get last (duration_open) seconds of data from board - alpha should not be present
+            data_open = self.cnct.cnct.board_obj.get_current_board_data(int(duration * self.cnct.cnct.sfreq))[0] # only channel 1 is beign analyzed here
+
+            Done_Stim = visual.TextStim(self.psyPy_window, text="Done")
+            Done_Stim.draw()
+            self.psyPy_window.flip()
+            time.sleep(1)
+            self.psyPy_window.flip()
+
+            # plot the data
+            X = np.linspace(0, int(len(data_open)/self.cnct.cnct.sfreq), int(len(data_open)))
+            print("Len of data_open: " + str(len(data_open)))
+            plt.plot(X, data_open)
+            plt.title("Eyes Open")
+            plt.show()
+
+            # set up epoch info
+            epoch_label = "alpha-open"
+
+            # calculate fft of data
+            timestep = 1/self.cnct.cnct.sfreq
+            fft = df()
+            exp = 1
+            while 2**exp < len(data_open):
+                NFFT = 2**exp
+                exp += 1
+            # fft['Frequency'] = np.fft.fftfreq(NFFT)
+            # fft['Frequency'] = np.fft.fftshift(fft['Frequency'])
+            # fft = fft.query('Frequency>=0').mul(self.cnct.cnct.sfreq)
+            fft['Eyes Open Alpha PSD'] = (np.real(np.fft.fft(data_open, n=NFFT))**2)[8:13] # analyzing channel 0 for now
+
+            #   # Get average FFT between 8 and 13 Hz
+            avg_alpha_power_open = np.mean(fft['Eyes Open Alpha PSD']) # alpha-band: 8 to 13 Hz
+
+            # Get user to confirm that alpha waves appear correct
+            print("Eyes Open (Alpha): " + str(avg_alpha_power_open))
+
 
         # Instruction Sets #####################################################
 
@@ -287,6 +412,86 @@ class presenter:
                           # flip window
                           self.psyPy_window.flip()
                           break
+
+        if set == "pre-alpha-check-closed":
+            instrctsTxt_1 = "In this section your EEG will be record with your eyes remaining closed."
+            instrctsTxt_2 = "When you hear the first beep, close your eyes until you hear the second beep."
+
+            instrct_stim_1 = visual.TextStim(self.psyPy_window, text=instrctsTxt_1)
+            instrct_stim_2 = visual.TextStim(self.psyPy_window, text=instrctsTxt_2)
+
+            instructions = [instrct_stim_1, instrct_stim_2]
+            instructions[0].setAutoDraw(True)
+
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+            self.psyPy_window.flip()
+
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
+
+        if set == "pre-alpha-check-open":
+            instrctsTxt_1 = "In this section your EEG will be record with your eyes remaining open."
+            instrctsTxt_2 = "When you hear the first beep, do not blink or close your eyes until you hear the second beep."
+
+            instrct_stim_1 = visual.TextStim(self.psyPy_window, text=instrctsTxt_1)
+            instrct_stim_2 = visual.TextStim(self.psyPy_window, text=instrctsTxt_2)
+
+            instructions = [instrct_stim_1, instrct_stim_2]
+            instructions[0].setAutoDraw(True)
+
+            Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+            Continue_Instruct_Stim.setAutoDraw(True)
+            self.psyPy_window.flip()
+
+            i = 0
+            while True:
+                # Check for right arrow key
+                keys = self.get_keypress()
+                # if right arrow is pressed
+                if 'right' in keys:
+                    # unset autoDraw for current stim
+                    instructions[i].setAutoDraw(False)
+
+                    # if currentStim is not the last stim
+                    if i < len(instructions) - 1:
+                      # set autoDraw for next stim
+                      instructions[i+1].setAutoDraw(True)
+                      # flip window
+                      self.psyPy_window.flip()
+                      # increment counter
+                      i += 1
+
+                    # if currentStim is the last stim
+                    else:
+                      # unset autoDraw for Continue_Instruct_Stim
+                      Continue_Instruct_Stim.setAutoDraw(False)
+                      # flip window
+                      self.psyPy_window.flip()
+                      break
 
         if set == "pre-alpha-check":
             instrctsTxt_1 = "In this section your EEG will be record with your eyes open, then closed."
@@ -998,13 +1203,20 @@ class presenter:
                     # subtract one from placeholder
                     break
 
-        if set in ["alpha-check-test", "SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
+        if set in ["alpha-check-test", "alpha-check-closed", "alpha-check-open", "SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
                           "label": epoch_label}
             self.cnct.cnct.annotations.append(epoch_info)
-            if set == "alpha-check":
+            if set == "alpha-check-test":
                 return epoch_info, alpha_ratio
+
+            if set == "alpha-check-closed":
+                return epoch_info, avg_alpha_power_closed
+
+            if set == "alpha-check-open":
+                return epoch_info, avg_alpha_power_open
+
 
         else:
             epoch_info = None
