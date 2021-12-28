@@ -6,6 +6,9 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import mne
 import pickle
 
+# imports - homemade
+import dialog
+
 # connection (obj)
 class connection:
     def __init__(self, board=None, sfreq=-1):
@@ -102,6 +105,15 @@ class controller:
             # save raw data as pickle file
             with open(save_as + ".pk", "wb") as f:
                 pickle.dump(rawData, f)
+
+            # prompt proctor to enter other notes
+            DLG_params = dialog.dialog_params(debug=True, features=["Proctor-Notes"])
+            DLG = dialog.dialog(params=DLG_params) # instantiate a dialog box
+            DLG.define_dialog_features() # define dialog box features
+            DLG_settings = DLG.raise_dialog() # raise a dialog box
+            dlg_settings = {"proctor_notes": DLG_settings[0]}
+            # create word document with proctor notes and experimental context
+            # save word document (named to match data file)
 
         print("End Connection")
         self.cnct.board_obj.stop_stream()
