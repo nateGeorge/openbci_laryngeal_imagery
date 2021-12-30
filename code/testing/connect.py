@@ -16,6 +16,7 @@ class connection:
         self.sfreq = sfreq
         self.data_buffer = []
         self.annotations = []
+        self.metadata = {"slides":[]}
 
 
 # controller (object)
@@ -68,11 +69,11 @@ class controller:
             rawData = self.cnct.board_obj.get_board_data()
             print(rawData)
             # create info object (channel names (list), sfreq (int), channel types (list))
-            number_to_1020 = {1: 'FC1', 2: 'FC2', 3: 'C3', 4: 'C4',
+            self.cnct.metadata["channel_map"] = {1: 'FC1', 2: 'FC2', 3: 'C3', 4: 'C4',
                               5: 'FC5', 6: 'FC6', 7: 'O1', 8: 'O2',
                               9: 'F7', 10: 'F8', 11: 'F3', 12: 'F4',
                               13: 'T3', 14: 'T4', 15: 'PO3', 16: 'PO4'}
-            ch_names = list(number_to_1020.values())
+            ch_names = list(self.cnct.metadata["channel_map"].values())
             ch_types = ['eeg'] * 16
             info = mne.create_info(ch_names=ch_names, sfreq=self.cnct.sfreq, ch_types=ch_types)
             # combine info and raw data to make (mne) raw (rawArray) object
@@ -83,7 +84,7 @@ class controller:
             durations_list = []
             label_list = []
             for i in range(len(self.cnct.annotations)):
-                if self.cnct.annotations[i]["label"] == "alpha-check":
+                if self.cnct.annotations[i]["label"] == "alpha-check-test":
                     for j in range(len(self.cnct.annotations[i]["condition_start_time"])):
                         onsets_list.append(self.cnct.annotations[i]["condition_start_time"][j])
                         durations_list.append(self.cnct.annotations[i]["duration"][j])
@@ -106,13 +107,31 @@ class controller:
             with open(save_as + ".pk", "wb") as f:
                 pickle.dump(rawData, f)
 
-            # prompt proctor to enter other notes
-            DLG_params = dialog.dialog_params(debug=True, features=["Proctor-Notes"])
+            # prompt proctor to enter other notes and confirm channel dictionary with proctor
+            DLG_params = dialog.dialog_params(debug=True, features=["Confirm-Chns", "Proctor-Notes"])
             DLG = dialog.dialog(params=DLG_params) # instantiate a dialog box
             DLG.define_dialog_features() # define dialog box features
-            DLG_settings = DLG.raise_dialog() # raise a dialog box
-            dlg_settings = {"proctor_notes": DLG_settings[0]}
-            # create word document with proctor notes and experimental context
+            DLG_settings = DLG.raise_dialog(cnct=self.cnct) # raise a dialog box
+            dlg_settings = {"proctor_notes": DLG_settings[-1]}
+            self.cnct.metadata["proctor_notes"] = dlg_settings["proctor_notes"]
+            # get trials and trial counts
+            print("Slide Counts: ")
+            counted = []
+            slide_counts = {}
+            for set in self.cnct.metadata["slides"]:
+                if set not in counted:
+                    counted.append(set)
+                    slide_counts[set] = 1
+                else:
+                    slide_counts[set] += 1
+            self.cnct.metadata["slide_counts"] = slide_counts
+
+            self.cnct.metadata["proctor_notes"] = dlg_settings["proctor_notes"]
+            # create text file with proctor notes and experimental context
+            metaFilepath = self.cnct.metadata["data_filename"] + ".txt"
+            print("Meta-filepath: " + metaFilepath)
+            metafile = open(metaFilepath, "w")
+            metafile.write(str(self.cnct.metadata))
             # save word document (named to match data file)
 
         print("End Connection")

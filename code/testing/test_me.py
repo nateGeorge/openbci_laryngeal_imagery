@@ -27,14 +27,11 @@ if "PRSNT" in test:
         cnct.make_connection(brdType=dlg_settings["brd_type"], bt_port=dlg_settings["bt_port"], ip_port=dlg_settings["ip_port"], ip_address=dlg_settings["ip_addr"])
         PRSNT.cnct = cnct
 
-    PRSNT.present_slide_set(set="pre-alpha-check-open")
     epoch_info, alpha = PRSNT.present_slide_set(set="alpha-check-open")
-    print("I did it! The alpha is: " + str(alpha))
 
-    # epoch_info = PRSNT.present_slide_set(set="SSVEP", wait_after=False)
-    # print("Check - Epoch Info: ")
-    # print(epoch_info)
+    print("I did it! The alpha is: " + str(alpha))
     PRSNT.end_present() # end presentation with a slide method
 
     if "CNCT" in test:
-        cnct.end_connection(save_as=f"data/BCIproject_trial-{dlg_settings['exp_id']}_raw")
+        cnct.cnct.metadata["data_filename"] = f"data/BCIproject_trial-{dlg_settings['exp_id']}_raw"
+        cnct.end_connection(save_as=cnct.cnct.metadata["data_filename"])

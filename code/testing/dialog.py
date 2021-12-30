@@ -49,9 +49,14 @@ class dialog:
         else:
             self.params.procNotes = False
 
+        if "Confirm-Chns" in self.params.features:
+            self.params.confChns = True
+        else:
+            self.params.confChns = False
+
         return
 #   Raise Dialog Box
-    def raise_dialog(self):
+    def raise_dialog(self, cnct=None):
         # Raise a Dialog Box to Collect Information
         # Raise Dialog Box
         dlgWin = gui.Dlg()
@@ -75,6 +80,13 @@ class dialog:
         if self.params.procNotes:
             dlgWin.addText('Proctor: Other Experimental Notes')
             dlgWin.addField('Notes: ')
+        if self.params.confChns:
+            chns_string = ''
+            for i in range(len(cnct.metadata["channel_map"])):
+                chns_string = chns_string + str(i+1) + " - " + str(cnct.metadata["channel_map"][i+1]) + "\n"
+            dlgWin.addText('Confirm Channel Dictionary')
+            dlgWin.addText(chns_string)
+            dlgWin.addText('To correct any errors, make a comment in the proctor notes.')
         # Make Object with Values
         settings = dlgWin.show()
         # Return Object

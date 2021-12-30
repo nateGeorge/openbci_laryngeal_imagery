@@ -1203,13 +1203,13 @@ class presenter:
                     # subtract one from placeholder
                     break
 
-        if set in ["alpha-check-test", "alpha-check-closed", "alpha-check-open", "SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
+        if set in ["alpha-check-closed", "alpha-check-open", "SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
+            self.cnct.cnct.metadata["slides"].append(epoch_label)
+
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
                           "label": epoch_label}
             self.cnct.cnct.annotations.append(epoch_info)
-            if set == "alpha-check-test":
-                return epoch_info, alpha_ratio
 
             if set == "alpha-check-closed":
                 return epoch_info, avg_alpha_power_closed
