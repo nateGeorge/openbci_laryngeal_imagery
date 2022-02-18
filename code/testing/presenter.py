@@ -70,13 +70,13 @@ class presenter:
         return
 
     # Mangage Presentation of A Set of Slides
-    def present_slide_set(self, set="", elephant_ans=None, wait_after=True, not_ssvep_response_time=5):
+    def present_slide_set(self, elephant_ans, set="", wait_after=True, not_ssvep_response_time=5):
         """
         Run a set of slides then wait for key press to continue/exit
 
         Parameters:
+          elephant_ans: (bool) If True, the elephant question will be rendered such that the correct answer is True; should be set to None for instruction slide sets
           set: (str) the name of the slide set
-          elephant_ans: (bool) If True, the elephant question will be rendered such that the correct answer is True
           wait_after: (bool) If False, this method does not wait for a keypress at the end of the current slide set
           not_ssvep_response_time: (int) How many seconds to allow participant to respond for; SSVEP is 5 seconds (length of media file) regardless of this parameter
 
@@ -91,7 +91,9 @@ class presenter:
               - alpha-check-closed -- check alpha waves when particpant eyes are closed
         #######  Instruction Sets ########
               - pre-exp -- Present the instructions leading up to the experiment
-              - pre-alpha-check - instructions for the alpha wave check
+              - pre-alpha-check - instructions for the combined alpha wave check (open and closed)
+              - pre-alpha-check-closed - instructions for the closed-eyes alpha wave check
+              - pre-alpha-check-open - instructions for the open-eyes alpha wave check
               - pre-SSVEP -- Present the instructions leading up to SSVEP
               - pre-Motor-Real -- Present the instructions leading up to the Motor-Activity trial
               - pre-Motor-Imagined -- Present the instructions leading up to the Motor-Imagery trial
@@ -270,9 +272,9 @@ class presenter:
             # plot the data
             X = np.linspace(0, int(len(data_closed)/self.cnct.cnct.sfreq), int(len(data_closed)))
             print("Len of data_closed: " + str(len(data_closed)))
-            plt.plot(X, data_closed)
-            plt.title("Eyes Closed")
-            plt.show()
+            # plt.plot(X, data_closed)
+            # plt.title("Eyes Closed")
+            # plt.show()
 
             # set up epoch info
             epoch_label = "alpha-closed"
@@ -331,9 +333,9 @@ class presenter:
             # plot the data
             X = np.linspace(0, int(len(data_open)/self.cnct.cnct.sfreq), int(len(data_open)))
             print("Len of data_open: " + str(len(data_open)))
-            plt.plot(X, data_open)
-            plt.title("Eyes Open")
-            plt.show()
+            # plt.plot(X, data_open)
+            # plt.title("Eyes Open")
+            # plt.show()
 
             # set up epoch info
             epoch_label = "alpha-open"
@@ -360,20 +362,10 @@ class presenter:
         # Instruction Sets #####################################################
 
         if set == "pre-exp":
-                instrctsTxt_1 = """As you go through this experiment you
-                will answer yes or no to a simple question.
-                You will see an elephant pop up on the screen.
-                The elephant will either be inside of a box or not.
-                """
-                instrctsTxt_2 = """You will then be asked: 'Was the elephant
-                in the box?' Please click the right arrow (→) to respond yes
-                or the left arrow (←) to respond no.
-                """
-                instrctsTxt_3 = """Only after you have responded correctly will
-                you respond again by following the instructions for indicating yes or no.
-                """
-                instrctsTxt_4 = """WARNING: This experimental protocol contains flashing lights that may pose a danger to individuals who suffer from epilepsy. If you are dangerously sensitive to rapidly flashing lights, please stop the experiment now by pressing the 'x' key.
-                """
+                instrctsTxt_1 = """As you go through this experiment you will answer yes or no to a simple question. You will see an elephant pop up on the screen. The elephant will either be inside of a box or not."""
+                instrctsTxt_2 = """You will then be asked: 'Was the elephant in the box?' Please click 'y' to respond yes or 'n' to respond no."""
+                instrctsTxt_3 = """Only after you have responded correctly will you respond again by following the instructions for indicating yes or no."""
+                instrctsTxt_4 = """WARNING: This experimental protocol contains flashing lights that may pose a danger to individuals who suffer from epilepsy. If you are dangerously sensitive to rapidly flashing lights, please stop the experiment on the next screen by pressing the 'x' key."""
 
                 instrct_stim_1 = visual.TextStim(self.psyPy_window, text=instrctsTxt_1)
                 instrct_stim_2 = visual.TextStim(self.psyPy_window, text=instrctsTxt_2)
@@ -383,7 +375,7 @@ class presenter:
                 instructions = [instrct_stim_1, instrct_stim_2, instrct_stim_3, instrct_stim_4]
                 instructions[0].setAutoDraw(True)
 
-                Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.6], height=.06)
+                Continue_Instruct_Stim = visual.TextStim(win=self.psyPy_window, text="Press \u25BA to Continue", pos=[0, -.7], height=.06)
                 Continue_Instruct_Stim.setAutoDraw(True)
                 self.psyPy_window.flip()
 
@@ -760,8 +752,8 @@ class presenter:
             # make text instructions to present
             Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by imagining making a humming sound or remaing silent."
             Instruction_2 = "Imagine humming a constant sound to answer Yes"
-            Instruction_3 = "Remain silent to answer No"
-            Instruction_4 = "Remember to imgaine humming or remain silent until each trial is done"
+            Instruction_3 = "Do nothing to answer No"
+            Instruction_4 = "Remember to imgaine humming or do nothing until each trial is done"
 
 
             # convert text to TextStim's
@@ -868,7 +860,7 @@ class presenter:
 
             self.psyPy_window.flip()
 
-        if set == "Laryngeal-Modulation-Imagined":
+        if set == "pre-Laryngeal-Modulation-Imagined":
             # make text instructions to present
             Instruction_1 = "In this section you will answer the Elephant-in-the-Box Question by imagining making a high-pitched humming sound or a low-pitched humming sound."
             Instruction_2 = "Imagine making a high-pitched humming sound to answer Yes"
@@ -1035,7 +1027,7 @@ class presenter:
             epoch_label = "lmi-i" # laryngeal motor imagery - imagined
             print("epoch_label: " + epoch_label)
 
-            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine making a humming sound for Yes. Remain silent for No.")
+            Instruction_Stim = visual.TextStim(self.psyPy_window, text="Imagine making a humming sound for Yes. Do nothing for No.")
             Instruction_Stim.draw()
             self.psyPy_window.flip()
             time.sleep(3)
@@ -1177,7 +1169,7 @@ class presenter:
         # Wait for keypress at end of slide set
         if wait_after:
             while True:
-                Response_Key_Text_Prompt = "Press: 'x' to Exit; right arrow to Move Forward; left arrow to Go Back"
+                Response_Key_Text_Prompt = "Press: 'x' to Exit; 'right' arrow to Move Forward; 'c' to Check data quality"
                 Response_Key_Text_Stim = visual.TextStim(win=self.psyPy_window, text=Response_Key_Text_Prompt, height=.04)
                 Response_Key_Text_Stim.draw()
                 self.psyPy_window.flip()
@@ -1190,6 +1182,7 @@ class presenter:
                     print('Found X Keys')
                     self.psyPy_window.close()
                     self.cnct.end_connection(save=True)
+                    core.quit()
                     sys.exit(0)
                     break
                 # If Key = right -> Move Forward
@@ -1197,18 +1190,30 @@ class presenter:
                     print('Found Right Keys')
                     # add one to placeholder
                     break
-                # If Key = left -> Move Backward (repeat instructions/trial)
-                if 'left' in keys:
-                    print('Found Left Keys')
-                    # subtract one from placeholder
+                # If Key = c -> run alpha wave check
+                if 'c' in keys:
+                    print('Found c Keys')
+
+                    self.present_slide_set(elephant_ans=None, set="pre-alpha-check-closed", wait_after=False)
+                    alpha_closed = self.present_slide_set(elephant_ans=None, set="alpha-check-closed", wait_after=False)[1]
+                    self.present_slide_set(elephant_ans=None, set="pre-alpha-check-open", wait_after=False)
+                    alpha_open = self.present_slide_set(elephant_ans=None, set="alpha-check-open")[1]
+
+                    confirm_dlg = gui.Dlg(title='Is the Alpha Band Activity Reasonable?')
+                    confirm_dlg.addText('Eyes-Closed Alpha wave power ( ' + str(alpha_closed) + ' ) is ' + str(alpha_closed/alpha_open) + ' x Eyes-open Alpha wave power (' + str(alpha_open) + ')')
+                    confirm_dlg.addField("Continue? (Is the alpha band activity reasonable) ", False)
+                    confirm = confirm_dlg.show()[0]
+                    print("Check: " + str(confirm))
+
                     break
 
         if set in ["alpha-check-closed", "alpha-check-open", "SSVEP", "Motor-Real", "Motor-Imagined", "Laryngeal-Activity-Real", "Laryngeal-Activity-Imagined", "Laryngeal-Modulation-Real", "Laryngeal-Modulation-Imagined"]:
-            self.cnct.cnct.metadata["slides"].append(epoch_label)
+            self.cnct.cnct.metadata["slides"].append({"label": epoch_label, "cor_ans": elephant_ans})
 
             epoch_info = {"condition_start_time": start_time,
                           "duration": duration,
-                          "label": epoch_label}
+                          "label": epoch_label,
+                          "cor_ans": elephant_ans}
             self.cnct.cnct.annotations.append(epoch_info)
 
             if set == "alpha-check-closed":

@@ -27,9 +27,14 @@ if "PRSNT" in test:
         cnct.make_connection(brdType=dlg_settings["brd_type"], bt_port=dlg_settings["bt_port"], ip_port=dlg_settings["ip_port"], ip_address=dlg_settings["ip_addr"])
         PRSNT.cnct = cnct
 
-    epoch_info, alpha = PRSNT.present_slide_set(set="alpha-check-open")
+    PRSNT.present_slide_set(elephant_ans=None, set="pre-exp")
+    PRSNT.present_slide_set(elephant_ans=None, set="pre-SSVEP")
+    PRSNT.present_slide_set(elephant_ans=True, set="Elephant-Question", wait_after=False)
+    PRSNT.present_slide_set(elephant_ans=True, set="SSVEP")
+    PRSNT.present_slide_set(elephant_ans=False, set="Elephant-Question", wait_after=False)
+    PRSNT.present_slide_set(elephant_ans=False, set="SSVEP")
 
-    print("I did it! The alpha is: " + str(alpha))
+
     PRSNT.end_present() # end presentation with a slide method
 
     if "CNCT" in test:

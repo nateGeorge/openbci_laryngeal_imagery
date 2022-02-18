@@ -6,6 +6,8 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import mne
 import pickle
 
+from mne import Annotations
+
 # imports - homemade
 import dialog
 
@@ -43,7 +45,7 @@ class controller:
             self.sfreq = 125
 
         # OpenBCI-Cyton-WiFi
-        if self.brdType == 'Wifi':
+        if self.brdType == 'WiFi':
             brainflow_parameters.ip_address = ip_address #'192.168.4.1'
             brainflow_parameters.ip_port = ip_port #6229
             self.cnct.board_obj = BoardShim(6, brainflow_parameters)
@@ -53,7 +55,7 @@ class controller:
         self.cnct.board_obj.prepare_session()
         self.cnct.board_obj.start_stream()
         self.exp_start_time = time.time()
-        print("Experiment Start Time: " + str(self.exp_start_time))
+        print("START TIME: " + str(self.exp_start_time))
         print("New Connection")
         return self.exp_start_time
 
@@ -67,7 +69,12 @@ class controller:
         if save == True:
             # assign raw data to variable
             rawData = self.cnct.board_obj.get_board_data()
-            print(rawData)
+            print("Shape of Raw Data")
+            print(np.shape(rawData))
+            print("END TIME (get_board_data): " + str(time.time()))
+            print("End Connection")
+            self.cnct.board_obj.stop_stream()
+            self.cnct.board_obj.release_session()
             # create info object (channel names (list), sfreq (int), channel types (list))
             self.cnct.metadata["channel_map"] = {1: 'FC1', 2: 'FC2', 3: 'C3', 4: 'C4',
                               5: 'FC5', 6: 'FC6', 7: 'O1', 8: 'O2',
@@ -92,16 +99,30 @@ class controller:
                 else:
                     onsets_list.append(self.cnct.annotations[i]["condition_start_time"])
                     durations_list.append(self.cnct.annotations[i]["duration"])
-                    label_list.append(self.cnct.annotations[i]["label"])
-            print(onsets_list)
-            annot = mne.Annotations(onsets_list, durations_list, label_list)
-            raw.set_annotations(annot)
+                    label_list.append(self.cnct.annotations[i]["label"]+"-"+str(self.cnct.annotations[i]["cor_ans"]))
+            # annot = mne.Annotations(onsets_list, durations_list, label_list)
+            # annot = Annotations(onsets_list, duration_list, label_list)
+            # raw.set_annotations(annot)
+            # print(f'annot length = {len(annot)}')
+            # print(onsets_list)
+            print("OOGABOOGA")
+            # print(raw.info['meas_date'])
+            annot = mne.Annotations([0, 1, 5, 10, 15, 20, 1000], [1, 1, 1, 1, 1, 1, 1], ["a-label", "a-label", "a-label", "a-label", "a-label", "a-label", "a-label"])
+            # print(onsets_list)
+            # print(durations_list)
+            # print(label_list)
+            print(f'raw data shape = {np.shape(raw.get_data())}')
+            print(annot)
+            raw.set_annotations(annot, emit_warning=True)
+            for annotation in raw.annotations:
+                print(annotation)
 
             # set mne channel location montage (standard_1020) and attach to raw mne object
             montage = mne.channels.make_standard_montage('standard_1020')
+            raw.set_montage(montage)
             # save raw object as MNE fif file
             print("Save as:")
-            print("\t" + save_as)
+            print("\t" + save_as + ext)
             raw.save(save_as + ext)
             # save raw data as pickle file
             with open(save_as + ".pk", "wb") as f:
@@ -115,15 +136,15 @@ class controller:
             dlg_settings = {"proctor_notes": DLG_settings[-1]}
             self.cnct.metadata["proctor_notes"] = dlg_settings["proctor_notes"]
             # get trials and trial counts
-            print("Slide Counts: ")
             counted = []
             slide_counts = {}
             for set in self.cnct.metadata["slides"]:
-                if set not in counted:
-                    counted.append(set)
-                    slide_counts[set] = 1
+                set_label = set["label"]
+                if set_label not in counted:
+                    counted.append(set_label)
+                    slide_counts[set_label] = 1
                 else:
-                    slide_counts[set] += 1
+                    slide_counts[set_label] += 1
             self.cnct.metadata["slide_counts"] = slide_counts
 
             self.cnct.metadata["proctor_notes"] = dlg_settings["proctor_notes"]
@@ -133,7 +154,3 @@ class controller:
             metafile = open(metaFilepath, "w")
             metafile.write(str(self.cnct.metadata))
             # save word document (named to match data file)
-
-        print("End Connection")
-        self.cnct.board_obj.stop_stream()
-        self.cnct.board_obj.release_session()
